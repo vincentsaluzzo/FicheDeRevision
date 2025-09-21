@@ -1,0 +1,42 @@
+node_modules
+npm-debug.log
+.next
+.git
+.gitignore
+README.md
+.env
+.env.local
+.env.production.local
+.env.local.example
+.env.example
+Dockerfile
+.dockerignore
+docker-compose.yml
+
+# Backend specific
+backend/dist
+backend/node_modules
+backend/.env
+backend/database.sqlite
+backend/uploads
+
+# Frontend specific
+frontend/.next
+frontend/node_modules
+frontend/.env.local
+frontend/out
+
+# Development files
+*.log
+.DS_Store
+.vscode
+.idea
+*.swp
+*.swo
+
+# Test files
+__tests__
+*.test.js
+*.test.ts
+*.spec.js
+*.spec.ts

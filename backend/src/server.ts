@@ -1,0 +1,69 @@
+import express from "express";
+import cors from "cors";
+import dotenv from "dotenv";
+import path from "path";
+import { fileURLToPath } from "url";
+
+import { initializeDatabase } from "./models/database";
+import revisionRoutes from "./routes/revision";
+import healthRoutes from "./routes/health";
+
+dotenv.config();
+
+const app = express();
+const PORT = process.env.PORT || 3001;
+
+app.use(
+  cors({
+    origin: process.env.CORS_ORIGIN || "http://localhost:3000",
+    credentials: true,
+  })
+);
+
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ extended: true, limit: "50mb" }));
+
+const uploadsDir = process.env.UPLOADS_DIR || "./uploads";
+app.use("/uploads", express.static(path.join(process.cwd(), uploadsDir)));
+
+app.use("/api/health", healthRoutes);
+app.use("/api/revision", revisionRoutes);
+
+app.get("/", (req, res) => {
+  res.json({
+    message: "Revision Sheet Generator API",
+    version: "1.0.0",
+    status: "running",
+  });
+});
+
+const startServer = async () => {
+  try {
+    await initializeDatabase();
+    console.log("✅ Database initialized successfully");
+
+    app.listen(PORT, () => {
+      console.log(`🚀 Server running on port ${PORT}`);
+      console.log(`📁 Uploads directory: ${uploadsDir}`);
+      console.log(
+        `🌐 CORS origin: ${process.env.CORS_ORIGIN || "http://localhost:3000"}`
+      );
+      console.log(`DEBUG_AI: ${process.env.DEBUG_AI}`);
+      console.log(
+        `OPENAI_MODEL: ${process.env.OPENAI_MODEL || "gpt-4o-mini (default) "}`
+      );
+    });
+  } catch (error) {
+    console.error("❌ Failed to start server:", error);
+    process.exit(1);
+  }
+};
+
+startServer();
+
+process.on("SIGINT", () => {
+  console.log("\n🛑 Server shutting down...");
+  process.exit(0);
+});
+
+export default app;

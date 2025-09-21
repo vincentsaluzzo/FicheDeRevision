@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  revision-generator:
+    build: .
+    ports:
+      - "3000:3000"  # Frontend
+      - "3001:3001"  # Backend API
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - FRONTEND_PORT=3000
+      - DATABASE_PATH=/app/data/database/database.sqlite
+      - UPLOADS_DIR=/app/data/uploads
+      - NEXT_PUBLIC_API_URL=http://localhost:3001
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - MISTRAL_API_KEY=${MISTRAL_API_KEY}
+      - CORS_ORIGIN=http://localhost:3000
+      - MAX_FILE_SIZE=10485760
+    volumes:
+      - revision_data:/app/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+volumes:
+  revision_data:
+    driver: local
