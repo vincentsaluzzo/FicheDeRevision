@@ -12,7 +12,70 @@ Une application web mobile-first qui transforme vos photos de cours en fiches de
 - 📚 **Historique** - Sauvegarde de toutes vos fiches
 - 🐳 **Docker** - Déploiement simplifié sur NAS/serveur
 
-## 🚀 Démarrage Rapide (Docker - Recommandé)
+## 🚀 Installation Ultra-Rapide (Recommandée)
+
+### Installation en une commande
+```bash
+curl -sSL https://raw.githubusercontent.com/yourusername/FicheDeRevision/main/install.sh | bash
+```
+
+Ou téléchargement manuel :
+```bash
+wget -qO- https://raw.githubusercontent.com/yourusername/FicheDeRevision/main/install.sh | bash
+```
+
+### Configuration et démarrage
+```bash
+cd revision-generator
+
+# 1. Configurer vos clés API
+nano .env
+
+# 2. Démarrer l'application (images pré-construites)
+docker-compose up -d
+
+# 3. Accéder à l'application
+# Interface web : http://localhost:3000
+# API : http://localhost:3001
+```
+
+### Contenu du fichier `.env` :
+```env
+# Au moins une des deux clés est requise
+OPENAI_API_KEY=sk-your-openai-key-here
+MISTRAL_API_KEY=your-mistral-key-here
+```
+
+---
+
+## 🔧 Installation Manuelle (Si vous préférez)
+
+### 1. Télécharger les fichiers
+```bash
+mkdir revision-generator && cd revision-generator
+
+# Docker Compose pour production (images pré-construites)
+curl -sSL https://raw.githubusercontent.com/yourusername/FicheDeRevision/main/docker-compose.prod.yml -o docker-compose.yml
+
+# Fichier d'exemple des variables d'environnement
+curl -sSL https://raw.githubusercontent.com/yourusername/FicheDeRevision/main/.env.example -o .env.example
+cp .env.example .env
+```
+
+### 2. Configuration et démarrage
+```bash
+# Éditer vos clés API
+nano .env
+
+# Démarrer (aucune compilation locale requise)
+docker-compose up -d
+```
+
+---
+
+## 🛠️ Développement Local (Build depuis les sources)
+
+Si vous souhaitez modifier le code ou contribuer au projet :
 
 ### 1. Cloner le projet
 ```bash
@@ -22,27 +85,13 @@ cd FicheDeRevision
 
 ### 2. Configuration des clés API
 ```bash
-# Copier le fichier d'exemple
 cp .env.example .env
-
-# Éditer le fichier .env avec vos clés API
 nano .env
 ```
 
-Contenu du fichier `.env` :
-```env
-# Au moins une des deux clés est requise
-OPENAI_API_KEY=sk-your-openai-key-here
-MISTRAL_API_KEY=your-mistral-key-here
-
-# Optionnel : personnaliser les ports
-# FRONTEND_PORT=3000
-# BACKEND_PORT=3001
-```
-
-### 3. Lancer l'application
+### 3. Lancer en mode développement
 ```bash
-# Construction et démarrage
+# Construction et démarrage depuis les sources
 docker-compose up --build
 
 # En arrière-plan
@@ -53,7 +102,9 @@ docker-compose up -d --build
 - **Interface web** : http://localhost:3000
 - **API** : http://localhost:3001
 
-## 🛠️ Développement Local
+---
+
+## 🛠️ Développement Local (Node.js)
 
 ### Prérequis
 - Node.js 18+
