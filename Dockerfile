@@ -7,7 +7,7 @@ WORKDIR /app/frontend
 
 # Copy frontend package files
 COPY frontend/package*.json ./
-RUN npm ci --only=production
+RUN npm ci
 
 # Copy frontend source and build
 COPY frontend/ ./
@@ -30,7 +30,7 @@ RUN npm run build
 # Stage 3: Production image
 FROM node:18-alpine AS production
 
-# Install system dependencies for Puppeteer
+# Install system dependencies for Puppeteer and curl for healthchecks
 RUN apk add --no-cache \
     chromium \
     nss \
@@ -39,6 +39,7 @@ RUN apk add --no-cache \
     harfbuzz \
     ca-certificates \
     ttf-freefont \
+    curl \
     && rm -rf /var/cache/apk/*
 
 # Tell Puppeteer to skip installing Chromium. We'll be using the installed package.
