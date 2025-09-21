@@ -29,7 +29,7 @@ import { isValidEducationLevel } from '../config/education';
 
 const router = express.Router();
 
-router.post('/generate', uploadMiddleware.single('image'), handleMulterError, async (req: Request, res: Response) => {
+router.post('/generate', uploadMiddleware.single('image'), handleMulterError, async (req: Request, res: Response): Promise<void> => {
   try {
     debugLog("=== New revision generation request ===");
     debugLog("Request body:", req.body);
@@ -160,7 +160,7 @@ router.post('/generate', uploadMiddleware.single('image'), handleMulterError, as
   }
 });
 
-router.get('/:id', (req: Request, res: Response) => {
+router.get('/:id', (req: Request, res: Response): void => {
   try {
     const { id } = req.params;
     const revisionSheet = getRevisionSheet(id);
@@ -199,7 +199,7 @@ router.get('/:id', (req: Request, res: Response) => {
   }
 });
 
-router.get('/', (req: Request, res: Response) => {
+router.get('/', (req: Request, res: Response): void => {
   try {
     const { educationLevel, limit = '50', offset = '0' } = req.query;
 
@@ -247,7 +247,7 @@ router.get('/', (req: Request, res: Response) => {
 });
 
 // Download lessons PDF
-router.get('/:id/pdf/lessons', (req: Request, res: Response) => {
+router.get('/:id/pdf/lessons', (req: Request, res: Response): void => {
   try {
     const { id } = req.params;
     const revisionSheet = getRevisionSheet(id);
@@ -281,7 +281,7 @@ router.get('/:id/pdf/lessons', (req: Request, res: Response) => {
 });
 
 // Download exercises PDF (without answers)
-router.get('/:id/pdf/exercises', (req: Request, res: Response) => {
+router.get('/:id/pdf/exercises', (req: Request, res: Response): void => {
   try {
     const { id } = req.params;
     const revisionSheet = getRevisionSheet(id);
@@ -315,7 +315,7 @@ router.get('/:id/pdf/exercises', (req: Request, res: Response) => {
 });
 
 // Download corrections PDF (with answers)
-router.get('/:id/pdf/corrections', (req: Request, res: Response) => {
+router.get('/:id/pdf/corrections', (req: Request, res: Response): void => {
   try {
     const { id } = req.params;
     const revisionSheet = getRevisionSheet(id);
@@ -349,7 +349,7 @@ router.get('/:id/pdf/corrections', (req: Request, res: Response) => {
 });
 
 // Legacy endpoint for backward compatibility (returns corrections PDF)
-router.get('/:id/pdf', (req: Request, res: Response) => {
+router.get('/:id/pdf', (req: Request, res: Response): void => {
   try {
     const { id } = req.params;
     const revisionSheet = getRevisionSheet(id);
@@ -382,7 +382,7 @@ router.get('/:id/pdf', (req: Request, res: Response) => {
   }
 });
 
-router.get('/:id/image', (req: Request, res: Response) => {
+router.get('/:id/image', (req: Request, res: Response): void => {
   try {
     const { id } = req.params;
     const revisionSheet = getRevisionSheet(id);
@@ -412,7 +412,7 @@ router.get('/:id/image', (req: Request, res: Response) => {
   }
 });
 
-router.delete('/:id', (req: Request, res: Response) => {
+router.delete('/:id', (req: Request, res: Response): void => {
   try {
     const { id } = req.params;
     const deleted = deleteRevisionSheet(id);
