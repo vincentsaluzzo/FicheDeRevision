@@ -99,6 +99,10 @@ UPLOADS_DIR=./uploads
 MAX_FILE_SIZE=10485760
 CORS_ORIGIN=http://localhost:3000
 
+# AI Model Configuration
+OPENAI_MODEL=gpt-4o-mini
+OPENAI_MAX_OUTPUT_TOKENS=100000
+
 # Debug Options
 DEBUG_AI=false
 ```
@@ -119,6 +123,28 @@ NEXT_PUBLIC_API_URL=http://localhost:3001
 1. Créer un compte sur https://console.mistral.ai
 2. Générer une clé API
 3. Ajouter des crédits à votre compte
+
+### Configuration des modèles IA
+
+#### Modèles OpenAI supportés
+```env
+# Modèles recommandés
+OPENAI_MODEL=gpt-4o-mini          # Rapide et économique (par défaut)
+OPENAI_MODEL=gpt-4o               # Plus puissant, plus cher
+OPENAI_MODEL=gpt-4-turbo          # Version optimisée de GPT-4
+
+# Modèles expérimentaux (si disponibles)
+OPENAI_MODEL=gpt-5-preview        # Utilise l'API Responses
+```
+
+#### Optimisation des tokens
+```env
+# Pour les modèles GPT-5 avec API Responses
+OPENAI_MAX_OUTPUT_TOKENS=100000   # Tokens de sortie maximum
+
+# Pour les modèles GPT-4o avec Chat Completions
+# Le max_tokens est fixé à 2000 dans le code
+```
 
 ## 🏫 Niveaux Scolaires Supportés
 
@@ -152,8 +178,9 @@ NEXT_PUBLIC_API_URL=http://localhost:3001
 - **Sharp** - Traitement d'images
 
 ### Intelligence Artificielle
-- **OpenAI GPT-4 Vision** - Analyse d'images et génération de contenu
-- **Mistral AI Pixtral** - Alternative européenne pour l'analyse d'images
+- **OpenAI GPT-4o Mini** - Modèle rapide et économique pour l'analyse d'images
+- **Mistral AI Pixtral 12B** - Alternative européenne avec support multimodal
+- **Configurable** - Possibilité d'utiliser d'autres modèles (GPT-4o, GPT-5, etc.)
 
 ### Génération PDF
 - **Puppeteer** - Génération PDF haute qualité

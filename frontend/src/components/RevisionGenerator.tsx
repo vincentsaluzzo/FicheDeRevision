@@ -1,15 +1,15 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { ImageUpload } from '@/components/ImageUpload';
 import { EducationLevelSelector } from '@/components/EducationLevelSelector';
 import { RevisionPreview } from '@/components/RevisionPreview';
-import { generateRevisionSheet, GenerateRevisionResponse } from '@/lib/api';
+import { generateRevisionSheet, GenerateRevisionResponse, getAIModels, AIModelInfo, getLessonsPdfUrl, getExercisesPdfUrl, getCorrectionsPdfUrl } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
-import { Sparkles, Download, RotateCcw } from 'lucide-react';
+import { Sparkles, Download, RotateCcw, Loader2, FileText, BookOpen } from 'lucide-react';
 
 interface GenerationState {
   isGenerating: boolean;
@@ -28,10 +28,49 @@ export function RevisionGenerator() {
     stage: '',
     result: null
   });
+  const [aiModels, setAIModels] = useState<{
+    openai: AIModelInfo;
+    mistral: AIModelInfo;
+  } | null>(null);
+  const [loadingModels, setLoadingModels] = useState(true);
 
   const { toast } = useToast();
 
-  const canGenerate = selectedImage && educationLevel && !generation.isGenerating;
+  // Fetch AI model information on component mount
+  useEffect(() => {
+    const fetchAIModels = async () => {
+      try {
+        const response = await getAIModels();
+        setAIModels(response.models);
+
+        // Set preferred AI based on availability
+        if (response.models.openai.available) {
+          setPreferredAI('openai');
+        } else if (response.models.mistral.available) {
+          setPreferredAI('mistral');
+        }
+      } catch (error) {
+        console.error('Failed to fetch AI models:', error);
+        toast({
+          title: "Erreur de configuration",
+          description: "Impossible de récupérer les informations des modèles IA",
+          variant: "destructive",
+        });
+      } finally {
+        setLoadingModels(false);
+      }
+    };
+
+    fetchAIModels();
+  }, [toast]);
+
+  const canGenerate = selectedImage &&
+                     educationLevel &&
+                     !generation.isGenerating &&
+                     aiModels &&
+                     (aiModels.openai.available || aiModels.mistral.available) &&
+                     ((preferredAI === 'openai' && aiModels.openai.available) ||
+                      (preferredAI === 'mistral' && aiModels.mistral.available));
 
   const handleGenerate = async () => {
     if (!selectedImage || !educationLevel) return;
@@ -55,7 +94,7 @@ export function RevisionGenerator() {
       setGeneration(prev => ({
         ...prev,
         progress: 80,
-        stage: 'Génération du PDF...'
+        stage: 'Génération des 3 PDFs...'
       }));
 
       setTimeout(() => {
@@ -68,7 +107,7 @@ export function RevisionGenerator() {
 
         toast({
           title: "Fiche de révision générée !",
-          description: `Votre fiche "${result.title}" est prête. Le PDF sera disponible dans quelques instants.`,
+          description: `Votre fiche "${result.title}" est prête. Les 3 PDFs seront disponibles dans quelques instants.`,
         });
       }, 2000);
 
@@ -101,10 +140,7 @@ export function RevisionGenerator() {
     });
   };
 
-  const getPdfUrl = (id: string) => {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-    return `${apiUrl}/api/revision/${id}/pdf`;
-  };
+  // Remove this function since we now import the URL functions from api.ts
 
   if (generation.result) {
     return (
@@ -116,35 +152,84 @@ export function RevisionGenerator() {
               Fiche de révision générée
             </CardTitle>
             <CardDescription>
-              Votre fiche a été créée avec succès using {generation.result.provider === 'openai' ? 'OpenAI' : 'Mistral AI'}
+              Votre fiche a été créée avec succès en utilisant {
+                generation.result.provider === 'openai'
+                  ? (aiModels?.openai.displayName || 'OpenAI')
+                  : (aiModels?.mistral.displayName || 'Mistral AI')
+              }
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex flex-col sm:flex-row gap-3">
-              <Button
-                asChild
-                className="flex-1"
-                size="lg"
-              >
-                <a
-                  href={getPdfUrl(generation.result.id)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2"
+            <div className="grid gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <Button
+                  asChild
+                  size="lg"
+                  variant="outline"
+                  className="h-auto p-4"
                 >
-                  <Download className="w-4 h-4" />
-                  Télécharger le PDF
-                </a>
-              </Button>
+                  <a
+                    href={getLessonsPdfUrl(generation.result.id)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex flex-col items-center gap-2"
+                  >
+                    <BookOpen className="w-5 h-5" />
+                    <div className="text-center">
+                      <div className="font-semibold">Leçons</div>
+                      <div className="text-xs opacity-75">Cours uniquement</div>
+                    </div>
+                  </a>
+                </Button>
+
+                <Button
+                  asChild
+                  size="lg"
+                  variant="outline"
+                  className="h-auto p-4"
+                >
+                  <a
+                    href={getExercisesPdfUrl(generation.result.id)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex flex-col items-center gap-2"
+                  >
+                    <FileText className="w-5 h-5" />
+                    <div className="text-center">
+                      <div className="font-semibold">Exercices</div>
+                      <div className="text-xs opacity-75">Sans corrections</div>
+                    </div>
+                  </a>
+                </Button>
+
+                <Button
+                  asChild
+                  size="lg"
+                  className="h-auto p-4"
+                >
+                  <a
+                    href={getCorrectionsPdfUrl(generation.result.id)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex flex-col items-center gap-2"
+                  >
+                    <Download className="w-5 h-5" />
+                    <div className="text-center">
+                      <div className="font-semibold">Corrections</div>
+                      <div className="text-xs opacity-75">Réponses incluses</div>
+                    </div>
+                  </a>
+                </Button>
+              </div>
 
               <Button
                 onClick={handleReset}
-                variant="outline"
+                variant="ghost"
                 size="lg"
                 className="flex items-center gap-2"
               >
                 <RotateCcw className="w-4 h-4" />
-                Nouvelle fiche
+                Générer une nouvelle fiche
               </Button>
             </div>
           </CardContent>
@@ -194,31 +279,55 @@ export function RevisionGenerator() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 gap-3">
-            <Button
-              variant={preferredAI === 'openai' ? 'default' : 'outline'}
-              onClick={() => setPreferredAI('openai')}
-              disabled={generation.isGenerating}
-              className="h-auto p-4 flex flex-col items-center gap-2"
-            >
-              <div className="font-semibold">OpenAI</div>
-              <div className="text-xs text-center opacity-75">
-                GPT-4 Vision
-              </div>
-            </Button>
+          {loadingModels ? (
+            <div className="flex items-center justify-center p-8">
+              <Loader2 className="w-4 h-4 animate-spin mr-2" />
+              <span className="text-sm text-muted-foreground">Chargement des modèles...</span>
+            </div>
+          ) : aiModels ? (
+            <div className="grid grid-cols-2 gap-3">
+              <Button
+                variant={preferredAI === 'openai' ? 'default' : 'outline'}
+                onClick={() => setPreferredAI('openai')}
+                disabled={generation.isGenerating || !aiModels.openai.available}
+                className="h-auto p-4 flex flex-col items-center gap-2"
+              >
+                <div className="font-semibold">OpenAI</div>
+                <div className="text-xs text-center opacity-75">
+                  {aiModels.openai.available ? aiModels.openai.displayName : 'Non disponible'}
+                </div>
+                {aiModels.openai.apiType === 'responses' && (
+                  <div className="text-xs text-center opacity-50">
+                    (API Responses)
+                  </div>
+                )}
+              </Button>
 
-            <Button
-              variant={preferredAI === 'mistral' ? 'default' : 'outline'}
-              onClick={() => setPreferredAI('mistral')}
-              disabled={generation.isGenerating}
-              className="h-auto p-4 flex flex-col items-center gap-2"
-            >
-              <div className="font-semibold">Mistral AI</div>
-              <div className="text-xs text-center opacity-75">
-                Pixtral
-              </div>
-            </Button>
-          </div>
+              <Button
+                variant={preferredAI === 'mistral' ? 'default' : 'outline'}
+                onClick={() => setPreferredAI('mistral')}
+                disabled={generation.isGenerating || !aiModels.mistral.available}
+                className="h-auto p-4 flex flex-col items-center gap-2"
+              >
+                <div className="font-semibold">Mistral AI</div>
+                <div className="text-xs text-center opacity-75">
+                  {aiModels.mistral.available ? aiModels.mistral.displayName : 'Non disponible'}
+                </div>
+              </Button>
+            </div>
+          ) : (
+            <div className="text-center p-4 text-muted-foreground">
+              <p>Impossible de charger les informations des modèles</p>
+            </div>
+          )}
+
+          {aiModels && !aiModels.openai.available && !aiModels.mistral.available && (
+            <div className="mt-4 p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
+              <p className="text-sm text-destructive text-center">
+                ⚠️ Aucune clé API configurée. Veuillez configurer au moins une clé API pour OpenAI ou Mistral.
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
 

@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { getAllRevisionSheets, RevisionSheet, getPdfUrl } from '@/lib/api';
+import { getAllRevisionSheets, RevisionSheet, getLessonsPdfUrl, getExercisesPdfUrl, getCorrectionsPdfUrl } from '@/lib/api';
 import { formatDate } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -14,7 +14,8 @@ import {
   Brain,
   FileText,
   Loader2,
-  AlertCircle
+  AlertCircle,
+  BookOpen
 } from 'lucide-react';
 
 function Badge({ children, className }: { children: React.ReactNode; className?: string }) {
@@ -25,7 +26,11 @@ function Badge({ children, className }: { children: React.ReactNode; className?:
   );
 }
 
-export function RevisionHistory() {
+interface RevisionHistoryProps {
+  onViewDetail: (revisionId: string) => void;
+}
+
+export function RevisionHistory({ onViewDetail }: RevisionHistoryProps) {
   const [sheets, setSheets] = useState<RevisionSheet[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -53,17 +58,48 @@ export function RevisionHistory() {
     }
   };
 
-  const handleDownloadPdf = (sheet: RevisionSheet) => {
-    if (!sheet.hasPdf) {
+  const handleDownloadLessons = (sheet: RevisionSheet, event: React.MouseEvent) => {
+    event.stopPropagation();
+    if (!sheet.hasLessonsPdf) {
       toast({
         title: "PDF non disponible",
-        description: "Le PDF pour cette fiche n'est pas encore généré",
+        description: "Le PDF des leçons n'est pas encore généré",
         variant: "destructive",
       });
       return;
     }
 
-    const url = getPdfUrl(sheet.id);
+    const url = getLessonsPdfUrl(sheet.id);
+    window.open(url, '_blank');
+  };
+
+  const handleDownloadExercises = (sheet: RevisionSheet, event: React.MouseEvent) => {
+    event.stopPropagation();
+    if (!sheet.hasExercisesPdf) {
+      toast({
+        title: "PDF non disponible",
+        description: "Le PDF des exercices n'est pas encore généré",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const url = getExercisesPdfUrl(sheet.id);
+    window.open(url, '_blank');
+  };
+
+  const handleDownloadCorrections = (sheet: RevisionSheet, event: React.MouseEvent) => {
+    event.stopPropagation();
+    if (!sheet.hasCorrectionsPdf) {
+      toast({
+        title: "PDF non disponible",
+        description: "Le PDF avec corrections n'est pas encore généré",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const url = getCorrectionsPdfUrl(sheet.id);
     window.open(url, '_blank');
   };
 
@@ -160,13 +196,16 @@ export function RevisionHistory() {
           <Card key={sheet.id} className="hover:shadow-md transition-shadow">
             <CardContent className="p-4">
               <div className="flex items-start justify-between gap-4">
-                <div className="flex-1 min-w-0">
+                <div
+                  className="flex-1 min-w-0 cursor-pointer"
+                  onClick={() => onViewDetail(sheet.id)}
+                >
                   <div className="flex items-start gap-3 mb-3">
                     <div className="bg-primary/10 rounded-lg p-2">
                       <FileText className="w-5 h-5 text-primary" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-sm md:text-base leading-tight mb-1">
+                      <h3 className="font-semibold text-sm md:text-base leading-tight mb-1 hover:text-primary transition-colors">
                         {sheet.title}
                       </h3>
                       <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
@@ -188,27 +227,53 @@ export function RevisionHistory() {
                       {sheet.educationLevel}
                     </Badge>
 
-                    {sheet.hasPdf ? (
+                    {(sheet.hasLessonsPdf && sheet.hasExercisesPdf && sheet.hasCorrectionsPdf) ? (
                       <Badge className="bg-green-100 text-green-800 border-green-200">
-                        PDF prêt
+                        3 PDFs prêts
+                      </Badge>
+                    ) : (sheet.hasLessonsPdf || sheet.hasExercisesPdf || sheet.hasCorrectionsPdf) ? (
+                      <Badge className="bg-blue-100 text-blue-800 border-blue-200">
+                        PDFs partiels
                       </Badge>
                     ) : (
                       <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200">
-                        PDF en cours...
+                        PDFs en cours...
                       </Badge>
                     )}
                   </div>
                 </div>
 
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-1">
                   <Button
-                    onClick={() => handleDownloadPdf(sheet)}
-                    disabled={!sheet.hasPdf}
+                    onClick={(e) => handleDownloadLessons(sheet, e)}
+                    disabled={!sheet.hasLessonsPdf}
                     size="sm"
-                    className="w-full sm:w-auto"
+                    variant="outline"
+                    className="text-xs"
                   >
-                    <Download className="w-4 h-4 mr-2" />
-                    PDF
+                    <BookOpen className="w-3 h-3 mr-1" />
+                    Leçons
+                  </Button>
+
+                  <Button
+                    onClick={(e) => handleDownloadExercises(sheet, e)}
+                    disabled={!sheet.hasExercisesPdf}
+                    size="sm"
+                    variant="outline"
+                    className="text-xs"
+                  >
+                    <FileText className="w-3 h-3 mr-1" />
+                    Exercices
+                  </Button>
+
+                  <Button
+                    onClick={(e) => handleDownloadCorrections(sheet, e)}
+                    disabled={!sheet.hasCorrectionsPdf}
+                    size="sm"
+                    className="text-xs"
+                  >
+                    <Download className="w-3 h-3 mr-1" />
+                    Corrections
                   </Button>
                 </div>
               </div>

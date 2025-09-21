@@ -5,12 +5,24 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { RevisionGenerator } from '@/components/RevisionGenerator';
 import { RevisionHistory } from '@/components/RevisionHistory';
-import { GraduationCap, Plus, History, Sparkles } from 'lucide-react';
+import { RevisionDetail } from '@/components/RevisionDetail';
+import { GraduationCap, Plus, History, Sparkles, ArrowLeft } from 'lucide-react';
 
-type View = 'generator' | 'history';
+type View = 'generator' | 'history' | 'detail';
 
 export default function HomePage() {
   const [currentView, setCurrentView] = useState<View>('generator');
+  const [selectedRevisionId, setSelectedRevisionId] = useState<string | null>(null);
+
+  const handleViewRevisionDetail = (revisionId: string) => {
+    setSelectedRevisionId(revisionId);
+    setCurrentView('detail');
+  };
+
+  const handleBackToHistory = () => {
+    setSelectedRevisionId(null);
+    setCurrentView('history');
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
@@ -33,27 +45,38 @@ export default function HomePage() {
         {/* Navigation */}
         <Card className="mb-6">
           <CardContent className="p-4">
-            <div className="grid grid-cols-2 gap-2">
+            {currentView === 'detail' ? (
               <Button
-                variant={currentView === 'generator' ? 'default' : 'outline'}
-                onClick={() => setCurrentView('generator')}
+                variant="outline"
+                onClick={handleBackToHistory}
                 className="h-12 flex items-center justify-center gap-2"
               >
-                <Plus className="w-4 h-4" />
-                <span className="hidden sm:inline">Nouvelle fiche</span>
-                <span className="sm:hidden">Créer</span>
+                <ArrowLeft className="w-4 h-4" />
+                Retour à l'historique
               </Button>
+            ) : (
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  variant={currentView === 'generator' ? 'default' : 'outline'}
+                  onClick={() => setCurrentView('generator')}
+                  className="h-12 flex items-center justify-center gap-2"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span className="hidden sm:inline">Nouvelle fiche</span>
+                  <span className="sm:hidden">Créer</span>
+                </Button>
 
-              <Button
-                variant={currentView === 'history' ? 'default' : 'outline'}
-                onClick={() => setCurrentView('history')}
-                className="h-12 flex items-center justify-center gap-2"
-              >
-                <History className="w-4 h-4" />
-                <span className="hidden sm:inline">Historique</span>
-                <span className="sm:hidden">Fiches</span>
-              </Button>
-            </div>
+                <Button
+                  variant={currentView === 'history' ? 'default' : 'outline'}
+                  onClick={() => setCurrentView('history')}
+                  className="h-12 flex items-center justify-center gap-2"
+                >
+                  <History className="w-4 h-4" />
+                  <span className="hidden sm:inline">Historique</span>
+                  <span className="sm:hidden">Fiches</span>
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -61,8 +84,10 @@ export default function HomePage() {
         <div className="space-y-6">
           {currentView === 'generator' ? (
             <RevisionGenerator />
+          ) : currentView === 'history' ? (
+            <RevisionHistory onViewDetail={handleViewRevisionDetail} />
           ) : (
-            <RevisionHistory />
+            selectedRevisionId && <RevisionDetail revisionId={selectedRevisionId} />
           )}
         </div>
 

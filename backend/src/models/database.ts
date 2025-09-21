@@ -22,13 +22,34 @@ export const initializeDatabase = async (): Promise<void> => {
         title TEXT NOT NULL,
         education_level TEXT NOT NULL,
         image_path TEXT NOT NULL,
-        pdf_path TEXT,
+        lessons_pdf_path TEXT,
+        exercises_pdf_path TEXT,
+        corrections_pdf_path TEXT,
         content TEXT NOT NULL,
         ai_provider TEXT NOT NULL,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )
     `);
+
+    // Migration: Add new columns if they don't exist (for existing databases)
+    try {
+      db.exec(`ALTER TABLE revision_sheets ADD COLUMN lessons_pdf_path TEXT`);
+    } catch (e) {
+      // Column already exists, ignore
+    }
+
+    try {
+      db.exec(`ALTER TABLE revision_sheets ADD COLUMN exercises_pdf_path TEXT`);
+    } catch (e) {
+      // Column already exists, ignore
+    }
+
+    try {
+      db.exec(`ALTER TABLE revision_sheets ADD COLUMN corrections_pdf_path TEXT`);
+    } catch (e) {
+      // Column already exists, ignore
+    }
 
     db.exec(`
       CREATE INDEX IF NOT EXISTS idx_revision_sheets_education_level
@@ -51,8 +72,8 @@ export const createRevisionSheet = (sheet: Omit<RevisionSheet, 'createdAt' | 'up
   const now = new Date();
   const stmt = db.prepare(`
     INSERT INTO revision_sheets (
-      id, title, education_level, image_path, pdf_path, content, ai_provider, created_at, updated_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      id, title, education_level, image_path, lessons_pdf_path, exercises_pdf_path, corrections_pdf_path, content, ai_provider, created_at, updated_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
 
   stmt.run(
@@ -60,7 +81,9 @@ export const createRevisionSheet = (sheet: Omit<RevisionSheet, 'createdAt' | 'up
     sheet.title,
     sheet.educationLevel,
     sheet.imagePath,
-    sheet.pdfPath,
+    sheet.lessonsPdfPath,
+    sheet.exercisesPdfPath,
+    sheet.correctionsPdfPath,
     sheet.content,
     sheet.aiProvider,
     now.toISOString(),
@@ -85,7 +108,9 @@ export const getRevisionSheet = (id: string): RevisionSheet | null => {
     title: row.title,
     educationLevel: row.education_level,
     imagePath: row.image_path,
-    pdfPath: row.pdf_path,
+    lessonsPdfPath: row.lessons_pdf_path || '',
+    exercisesPdfPath: row.exercises_pdf_path || '',
+    correctionsPdfPath: row.corrections_pdf_path || '',
     content: row.content,
     aiProvider: row.ai_provider as 'openai' | 'mistral',
     createdAt: new Date(row.created_at),
@@ -107,7 +132,9 @@ export const getAllRevisionSheets = (limit: number = 50, offset: number = 0): Re
     title: row.title,
     educationLevel: row.education_level,
     imagePath: row.image_path,
-    pdfPath: row.pdf_path,
+    lessonsPdfPath: row.lessons_pdf_path || '',
+    exercisesPdfPath: row.exercises_pdf_path || '',
+    correctionsPdfPath: row.corrections_pdf_path || '',
     content: row.content,
     aiProvider: row.ai_provider as 'openai' | 'mistral',
     createdAt: new Date(row.created_at),
@@ -129,7 +156,9 @@ export const getRevisionSheetsByEducationLevel = (educationLevel: string): Revis
     title: row.title,
     educationLevel: row.education_level,
     imagePath: row.image_path,
-    pdfPath: row.pdf_path,
+    lessonsPdfPath: row.lessons_pdf_path || '',
+    exercisesPdfPath: row.exercises_pdf_path || '',
+    correctionsPdfPath: row.corrections_pdf_path || '',
     content: row.content,
     aiProvider: row.ai_provider as 'openai' | 'mistral',
     createdAt: new Date(row.created_at),
@@ -137,10 +166,32 @@ export const getRevisionSheetsByEducationLevel = (educationLevel: string): Revis
   }));
 };
 
+export const updateRevisionSheetAllPdfs = (id: string, lessonsPdfPath: string, exercisesPdfPath: string, correctionsPdfPath: string): void => {
+  const stmt = db.prepare(`
+    UPDATE revision_sheets
+    SET lessons_pdf_path = ?, exercises_pdf_path = ?, corrections_pdf_path = ?, updated_at = CURRENT_TIMESTAMP
+    WHERE id = ?
+  `);
+
+  stmt.run(lessonsPdfPath, exercisesPdfPath, correctionsPdfPath, id);
+};
+
+// Legacy function for backward compatibility
+export const updateRevisionSheetPdfPaths = (id: string, exercisesPdfPath: string, correctionsPdfPath: string): void => {
+  const stmt = db.prepare(`
+    UPDATE revision_sheets
+    SET exercises_pdf_path = ?, corrections_pdf_path = ?, updated_at = CURRENT_TIMESTAMP
+    WHERE id = ?
+  `);
+
+  stmt.run(exercisesPdfPath, correctionsPdfPath, id);
+};
+
+// Keep backward compatibility
 export const updateRevisionSheetPdfPath = (id: string, pdfPath: string): void => {
   const stmt = db.prepare(`
     UPDATE revision_sheets
-    SET pdf_path = ?, updated_at = CURRENT_TIMESTAMP
+    SET corrections_pdf_path = ?, updated_at = CURRENT_TIMESTAMP
     WHERE id = ?
   `);
 

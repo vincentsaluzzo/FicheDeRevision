@@ -10,7 +10,9 @@ export interface RevisionSheet {
   title: string;
   educationLevel: string;
   imagePath: string;
-  pdfPath: string;
+  lessonsPdfPath: string;
+  exercisesPdfPath: string;
+  correctionsPdfPath: string;
   content: string;
   aiProvider: 'openai' | 'mistral';
   createdAt: Date;
@@ -51,7 +53,9 @@ export interface DatabaseRevisionSheet {
   title: string;
   education_level: string;
   image_path: string;
-  pdf_path: string;
+  lessons_pdf_path: string;
+  exercises_pdf_path: string;
+  corrections_pdf_path: string;
   content: string;
   ai_provider: string;
   created_at: string;

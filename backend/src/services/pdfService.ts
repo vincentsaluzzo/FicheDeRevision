@@ -4,10 +4,34 @@ import fs from 'fs';
 import { AIResponse, Exercise } from '../types';
 import { getEducationLevel } from '../config/education';
 
-export const generatePDF = async (
+export const generateAllPDFs = async (
   aiResponse: AIResponse,
   educationLevel: string,
   imagePath?: string
+): Promise<{ lessonsPdf: string; exercisesPdf: string; correctionsPdf: string }> => {
+  try {
+    const [lessonsPdf, exercisesPdf, correctionsPdf] = await Promise.all([
+      generateLessonPDF(aiResponse, educationLevel, imagePath),     // Lessons only
+      generateExercisesPDF(aiResponse, educationLevel),             // Exercises only
+      generateCorrectionsPDF(aiResponse, educationLevel)            // Corrections only
+    ]);
+
+    return {
+      lessonsPdf,
+      exercisesPdf,
+      correctionsPdf
+    };
+  } catch (error) {
+    console.error('Error generating all PDFs:', error);
+    throw new Error(`Failed to generate PDFs: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+};
+
+export const generatePDF = async (
+  aiResponse: AIResponse,
+  educationLevel: string,
+  imagePath?: string,
+  includeAnswers: boolean = true
 ): Promise<string> => {
   let browser;
 
@@ -24,12 +48,13 @@ export const generatePDF = async (
 
     const page = await browser.newPage();
 
-    const html = generateHTML(aiResponse, level, imagePath);
+    const html = generateHTML(aiResponse, level, imagePath, includeAnswers);
 
     await page.setContent(html, { waitUntil: 'networkidle0' });
 
     const uploadsDir = process.env.UPLOADS_DIR || './uploads';
-    const pdfPath = path.join(uploadsDir, `revision_${Date.now()}.pdf`);
+    const suffix = includeAnswers ? 'avec_corrections' : 'exercices';
+    const pdfPath = path.join(uploadsDir, `revision_${suffix}_${Date.now()}.pdf`);
 
     await page.pdf({
       path: pdfPath,
@@ -54,7 +79,155 @@ export const generatePDF = async (
   }
 };
 
-const generateHTML = (aiResponse: AIResponse, level: any, imagePath?: string): string => {
+// Generate lessons PDF (image + content only, no exercises)
+export const generateLessonPDF = async (
+  aiResponse: AIResponse,
+  educationLevel: string,
+  imagePath?: string
+): Promise<string> => {
+  let browser;
+
+  try {
+    const level = getEducationLevel(educationLevel);
+    if (!level) {
+      throw new Error(`Invalid education level: ${educationLevel}`);
+    }
+
+    browser = await puppeteer.launch({
+      headless: true,
+      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
+    });
+
+    const page = await browser.newPage();
+    const html = generateLessonsHTML(aiResponse, level, imagePath);
+
+    await page.setContent(html, { waitUntil: 'networkidle0' });
+
+    const uploadsDir = process.env.UPLOADS_DIR || './uploads';
+    const pdfPath = path.join(uploadsDir, `revision_lessons_${Date.now()}.pdf`);
+
+    await page.pdf({
+      path: pdfPath,
+      format: 'A4',
+      margin: {
+        top: '20mm',
+        right: '15mm',
+        bottom: '20mm',
+        left: '15mm'
+      },
+      printBackground: true
+    });
+
+    return pdfPath;
+  } catch (error) {
+    console.error('Lessons PDF generation error:', error);
+    throw new Error(`Failed to generate lessons PDF: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  } finally {
+    if (browser) {
+      await browser.close();
+    }
+  }
+};
+
+// Generate exercises PDF (exercises only, no answers)
+export const generateExercisesPDF = async (
+  aiResponse: AIResponse,
+  educationLevel: string
+): Promise<string> => {
+  let browser;
+
+  try {
+    const level = getEducationLevel(educationLevel);
+    if (!level) {
+      throw new Error(`Invalid education level: ${educationLevel}`);
+    }
+
+    browser = await puppeteer.launch({
+      headless: true,
+      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
+    });
+
+    const page = await browser.newPage();
+    const html = generateExercisesHTML(aiResponse, level);
+
+    await page.setContent(html, { waitUntil: 'networkidle0' });
+
+    const uploadsDir = process.env.UPLOADS_DIR || './uploads';
+    const pdfPath = path.join(uploadsDir, `revision_exercises_${Date.now()}.pdf`);
+
+    await page.pdf({
+      path: pdfPath,
+      format: 'A4',
+      margin: {
+        top: '20mm',
+        right: '15mm',
+        bottom: '20mm',
+        left: '15mm'
+      },
+      printBackground: true
+    });
+
+    return pdfPath;
+  } catch (error) {
+    console.error('Exercises PDF generation error:', error);
+    throw new Error(`Failed to generate exercises PDF: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  } finally {
+    if (browser) {
+      await browser.close();
+    }
+  }
+};
+
+// Generate corrections PDF (answers and explanations only)
+export const generateCorrectionsPDF = async (
+  aiResponse: AIResponse,
+  educationLevel: string
+): Promise<string> => {
+  let browser;
+
+  try {
+    const level = getEducationLevel(educationLevel);
+    if (!level) {
+      throw new Error(`Invalid education level: ${educationLevel}`);
+    }
+
+    browser = await puppeteer.launch({
+      headless: true,
+      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
+    });
+
+    const page = await browser.newPage();
+    const html = generateCorrectionsHTML(aiResponse, level);
+
+    await page.setContent(html, { waitUntil: 'networkidle0' });
+
+    const uploadsDir = process.env.UPLOADS_DIR || './uploads';
+    const pdfPath = path.join(uploadsDir, `revision_corrections_${Date.now()}.pdf`);
+
+    await page.pdf({
+      path: pdfPath,
+      format: 'A4',
+      margin: {
+        top: '20mm',
+        right: '15mm',
+        bottom: '20mm',
+        left: '15mm'
+      },
+      printBackground: true
+    });
+
+    return pdfPath;
+  } catch (error) {
+    console.error('Corrections PDF generation error:', error);
+    throw new Error(`Failed to generate corrections PDF: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  } finally {
+    if (browser) {
+      await browser.close();
+    }
+  }
+};
+
+const generateHTML = (aiResponse: AIResponse, level: any, imagePath?: string, includeAnswers: boolean = true): string => {
   const imageSection = imagePath ? `
     <div class="image-section">
       <img src="file://${path.resolve(imagePath)}" alt="Lesson Image" style="max-width: 100%; height: auto; border-radius: 8px; margin-bottom: 20px;">
@@ -62,7 +235,7 @@ const generateHTML = (aiResponse: AIResponse, level: any, imagePath?: string): s
   ` : '';
 
   const exercisesHTML = aiResponse.exercises.map((exercise, index) =>
-    generateExerciseHTML(exercise, index + 1)
+    generateExerciseHTML(exercise, index + 1, includeAnswers)
   ).join('');
 
   return `
@@ -85,7 +258,9 @@ const generateHTML = (aiResponse: AIResponse, level: any, imagePath?: string): s
             <span class="level-name">${level.name}</span>
             <span class="age-range">${level.ageRange}</span>
           </div>
-          <div class="date">Fiche de révision - ${new Date().toLocaleDateString('fr-FR')}</div>
+          <div class="date">
+            ${includeAnswers ? 'Fiche de révision avec corrections' : 'Fiche d\'exercices'} - ${new Date().toLocaleDateString('fr-FR')}
+          </div>
         </header>
 
         ${imageSection}
@@ -106,7 +281,10 @@ const generateHTML = (aiResponse: AIResponse, level: any, imagePath?: string): s
 
         <footer>
           <p>Fiche générée automatiquement pour le niveau ${level.name}</p>
-          <p>Gardez cette fiche pour vos révisions !</p>
+          ${includeAnswers
+            ? '<p>Corrigé inclus - utilisez cette fiche pour vérifier vos réponses !</p>'
+            : '<p>Complétez les exercices puis vérifiez avec la fiche de correction !</p>'
+          }
         </footer>
       </div>
     </body>
@@ -114,7 +292,7 @@ const generateHTML = (aiResponse: AIResponse, level: any, imagePath?: string): s
   `;
 };
 
-const generateExerciseHTML = (exercise: Exercise, index: number): string => {
+const generateExerciseHTML = (exercise: Exercise, index: number, includeAnswers: boolean = true): string => {
   switch (exercise.type) {
     case 'multiple_choice':
       return `
@@ -126,10 +304,15 @@ const generateExerciseHTML = (exercise: Exercise, index: number): string => {
               <div class="option">□ ${option}</div>
             `).join('') || ''}
           </div>
-          ${exercise.explanation ? `
+          ${includeAnswers && exercise.answer ? `
             <div class="answer-section">
-              <strong>Réponse :</strong> ${exercise.answer}<br>
-              <strong>Explication :</strong> ${exercise.explanation}
+              <strong>Réponse :</strong> ${exercise.answer}
+              ${exercise.explanation ? `<br><strong>Explication :</strong> ${exercise.explanation}` : ''}
+            </div>
+          ` : ''}
+          ${!includeAnswers ? `
+            <div class="answer-space">
+              <p><strong>Ta réponse :</strong> ________________</p>
             </div>
           ` : ''}
         </div>
@@ -144,10 +327,20 @@ const generateExerciseHTML = (exercise: Exercise, index: number): string => {
             <div class="option">□ Vrai</div>
             <div class="option">□ Faux</div>
           </div>
-          ${exercise.explanation ? `
+          ${includeAnswers && exercise.answer ? `
             <div class="answer-section">
-              <strong>Réponse :</strong> ${exercise.answer}<br>
-              <strong>Explication :</strong> ${exercise.explanation}
+              <strong>Réponse :</strong> ${exercise.answer}
+              ${exercise.explanation ? `<br><strong>Explication :</strong> ${exercise.explanation}` : ''}
+            </div>
+          ` : ''}
+          ${!includeAnswers ? `
+            <div class="answer-space">
+              <p><strong>Ta réponse :</strong> ________________</p>
+              <p><strong>Justification :</strong></p>
+              <div class="justification-lines">
+                ___________________________________________________________<br>
+                ___________________________________________________________
+              </div>
             </div>
           ` : ''}
         </div>
@@ -158,10 +351,20 @@ const generateExerciseHTML = (exercise: Exercise, index: number): string => {
         <div class="exercise">
           <h3>Exercice ${index} - Compléter</h3>
           <p class="question">${exercise.question}</p>
-          ${exercise.explanation ? `
+          ${includeAnswers && exercise.answer ? `
             <div class="answer-section">
-              <strong>Réponse :</strong> ${exercise.answer}<br>
-              <strong>Explication :</strong> ${exercise.explanation}
+              <strong>Réponse :</strong> ${exercise.answer}
+              ${exercise.explanation ? `<br><strong>Explication :</strong> ${exercise.explanation}` : ''}
+            </div>
+          ` : ''}
+          ${!includeAnswers ? `
+            <div class="answer-space">
+              <p><strong>Tes réponses :</strong></p>
+              <div class="fill-blank-lines">
+                1. ___________________________________________________________<br>
+                2. ___________________________________________________________<br>
+                3. ___________________________________________________________
+              </div>
             </div>
           ` : ''}
         </div>
@@ -170,12 +373,24 @@ const generateExerciseHTML = (exercise: Exercise, index: number): string => {
     default:
       return `
         <div class="exercise">
-          <h3>Exercice ${index}</h3>
+          <h3>Exercice ${index} - Question ouverte</h3>
           <p class="question">${exercise.question}</p>
-          ${exercise.explanation ? `
+          ${includeAnswers && exercise.answer ? `
             <div class="answer-section">
-              <strong>Réponse suggérée :</strong> ${exercise.answer}<br>
-              ${exercise.explanation ? `<strong>Explication :</strong> ${exercise.explanation}` : ''}
+              <strong>Réponse suggérée :</strong> ${exercise.answer}
+              ${exercise.explanation ? `<br><strong>Explication :</strong> ${exercise.explanation}` : ''}
+            </div>
+          ` : ''}
+          ${!includeAnswers ? `
+            <div class="answer-space">
+              <p><strong>Ta réponse :</strong></p>
+              <div class="open-answer-lines">
+                ___________________________________________________________<br>
+                ___________________________________________________________<br>
+                ___________________________________________________________<br>
+                ___________________________________________________________<br>
+                ___________________________________________________________
+              </div>
             </div>
           ` : ''}
         </div>
@@ -359,6 +574,23 @@ const getCSS = (): string => {
       font-size: 14px;
     }
 
+    .answer-space {
+      background: #f8f9fa;
+      padding: 15px;
+      border-radius: 8px;
+      border-left: 4px solid #007bff;
+      margin-top: 15px;
+      font-size: 14px;
+    }
+
+    .justification-lines,
+    .fill-blank-lines,
+    .open-answer-lines {
+      margin-top: 10px;
+      line-height: 1.8;
+      color: #666;
+    }
+
     footer {
       background: #f8f9fa;
       padding: 20px 30px;
@@ -385,5 +617,165 @@ const getCSS = (): string => {
         break-inside: avoid;
       }
     }
+  `;
+};
+
+// Generate HTML for lessons PDF (image + content only)
+const generateLessonsHTML = (aiResponse: AIResponse, level: any, imagePath?: string): string => {
+  const imageSection = imagePath ? `
+    <div class="image-section">
+      <img src="file://${path.resolve(imagePath)}" alt="Lesson Image" style="max-width: 100%; height: auto; border-radius: 8px; margin-bottom: 20px;">
+    </div>
+  ` : '';
+
+  return `
+    <!DOCTYPE html>
+    <html lang="fr">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>${aiResponse.title} - Leçon</title>
+      <style>
+        ${getCSS()}
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <header>
+          <h1>${aiResponse.title}</h1>
+          <div class="level-info">
+            <span class="level-badge">${level.code}</span>
+            <span class="level-name">${level.name}</span>
+            <span class="age-range">${level.ageRange}</span>
+          </div>
+          <div class="date">
+            Leçon - ${new Date().toLocaleDateString('fr-FR')}
+          </div>
+        </header>
+
+        ${imageSection}
+
+        <section class="content-section">
+          <h2>📚 Points clés à retenir</h2>
+          <div class="content">
+            ${formatContent(aiResponse.content)}
+          </div>
+        </section>
+
+        <footer>
+          <p>Leçon générée automatiquement pour le niveau ${level.name}</p>
+          <p>Complétez avec les exercices et vérifiez avec les corrections !</p>
+        </footer>
+      </div>
+    </body>
+    </html>
+  `;
+};
+
+// Generate HTML for exercises PDF (exercises only, no answers)
+const generateExercisesHTML = (aiResponse: AIResponse, level: any): string => {
+  const exercisesHTML = aiResponse.exercises.map((exercise, index) =>
+    generateExerciseHTML(exercise, index + 1, false)
+  ).join('');
+
+  return `
+    <!DOCTYPE html>
+    <html lang="fr">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>${aiResponse.title} - Exercices</title>
+      <style>
+        ${getCSS()}
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        ${aiResponse.exercises.length > 0 ? `
+          <section class="exercises-section">
+            <h2>📝 Exercices</h2>
+            ${exercisesHTML}
+          </section>
+        ` : ''}
+
+        <footer>
+          <p>Exercices générés automatiquement pour le niveau ${level.name}</p>
+          <p>Complétez les exercices puis vérifiez avec la fiche de correction !</p>
+        </footer>
+      </div>
+    </body>
+    </html>
+  `;
+};
+
+// Generate HTML for corrections PDF (answers and explanations only)
+const generateCorrectionsHTML = (aiResponse: AIResponse, level: any): string => {
+  const correctionsHTML = aiResponse.exercises.map((exercise, index) =>
+    generateCorrectionHTML(exercise, index + 1)
+  ).join('');
+
+  return `
+    <!DOCTYPE html>
+    <html lang="fr">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>${aiResponse.title} - Corrections</title>
+      <style>
+        ${getCSS()}
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <header>
+          <h1>${aiResponse.title}</h1>
+          <div class="level-info">
+            <span class="level-badge">${level.code}</span>
+            <span class="level-name">${level.name}</span>
+            <span class="age-range">${level.ageRange}</span>
+          </div>
+          <div class="date">
+            Fiche de corrections - ${new Date().toLocaleDateString('fr-FR')}
+          </div>
+        </header>
+
+        ${aiResponse.exercises.length > 0 ? `
+          <section class="exercises-section">
+            <h2>✅ Corrections et explications</h2>
+            ${correctionsHTML}
+          </section>
+        ` : ''}
+
+        <footer>
+          <p>Corrections générées automatiquement pour le niveau ${level.name}</p>
+          <p>Utilisez cette fiche pour vérifier vos réponses et comprendre les explications !</p>
+        </footer>
+      </div>
+    </body>
+    </html>
+  `;
+};
+
+// Generate correction HTML for a single exercise (answers and explanations only)
+const generateCorrectionHTML = (exercise: Exercise, index: number): string => {
+  return `
+    <div class="correction">
+      <h3>Exercice ${index}</h3>
+      <p class="question-ref">${exercise.question}</p>
+
+      <div class="correction-content">
+        ${exercise.answer ? `
+          <div class="answer">
+            <strong>✅ Réponse :</strong> ${exercise.answer}
+          </div>
+        ` : ''}
+
+        ${exercise.explanation ? `
+          <div class="explanation">
+            <strong>💡 Explication :</strong> ${exercise.explanation}
+          </div>
+        ` : ''}
+      </div>
+    </div>
   `;
 };

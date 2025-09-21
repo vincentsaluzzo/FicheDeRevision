@@ -37,7 +37,25 @@ export interface RevisionSheet {
   createdAt: string;
   updatedAt: string;
   hasImage: boolean;
-  hasPdf: boolean;
+  hasLessonsPdf: boolean;
+  hasExercisesPdf: boolean;
+  hasCorrectionsPdf: boolean;
+}
+
+export interface AIModelInfo {
+  available: boolean;
+  model: string;
+  displayName: string;
+  apiType: 'responses' | 'chat-completions';
+}
+
+export interface AIModelsResponse {
+  success: boolean;
+  models: {
+    openai: AIModelInfo;
+    mistral: AIModelInfo;
+  };
+  timestamp: string;
 }
 
 export interface GenerateRevisionResponse {
@@ -92,8 +110,21 @@ export const getEducationLevels = async (): Promise<{ levels: EducationLevel[]; 
   return response.data;
 };
 
+export const getLessonsPdfUrl = (id: string): string => {
+  return `${API_BASE_URL}/api/revision/${id}/pdf/lessons`;
+};
+
+export const getExercisesPdfUrl = (id: string): string => {
+  return `${API_BASE_URL}/api/revision/${id}/pdf/exercises`;
+};
+
+export const getCorrectionsPdfUrl = (id: string): string => {
+  return `${API_BASE_URL}/api/revision/${id}/pdf/corrections`;
+};
+
+// Legacy function for backward compatibility
 export const getPdfUrl = (id: string): string => {
-  return `${API_BASE_URL}/api/revision/${id}/pdf`;
+  return getCorrectionsPdfUrl(id);
 };
 
 export const getImageUrl = (id: string): string => {
@@ -102,5 +133,10 @@ export const getImageUrl = (id: string): string => {
 
 export const deleteRevisionSheet = async (id: string): Promise<{ success: boolean; message: string }> => {
   const response = await api.delete(`/api/revision/${id}`);
+  return response.data;
+};
+
+export const getAIModels = async (): Promise<AIModelsResponse> => {
+  const response = await api.get('/api/health/ai-models');
   return response.data;
 };

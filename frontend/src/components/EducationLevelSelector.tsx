@@ -1,13 +1,7 @@
 'use client';
 
 import React from 'react';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { GraduationCap } from 'lucide-react';
 
@@ -101,38 +95,27 @@ export function EducationLevelSelector({
       </CardHeader>
 
       <CardContent className="space-y-4">
-        <Select
-          value={value}
-          onValueChange={onValueChange}
-          disabled={disabled}
-        >
-          <SelectTrigger className="w-full h-12">
-            <SelectValue placeholder="Sélectionnez un niveau scolaire" />
-          </SelectTrigger>
-          <SelectContent>
-            {EDUCATION_LEVELS.map((level) => (
-              <SelectItem
-                key={level.code}
-                value={level.code}
-                className="py-3"
-              >
-                <div className="flex flex-col items-start w-full">
-                  <div className="flex items-center gap-2 w-full">
-                    <span className="font-semibold text-primary">
-                      {level.code}
-                    </span>
-                    <span className="font-medium">
-                      {level.name}
-                    </span>
-                    <span className="text-sm text-muted-foreground ml-auto">
-                      {level.ageRange}
-                    </span>
-                  </div>
-                </div>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="grid grid-cols-3 gap-2 sm:flex sm:flex-wrap sm:gap-2">
+          {EDUCATION_LEVELS.map((level) => (
+            <Button
+              key={level.code}
+              variant={value === level.code ? 'default' : 'outline'}
+              onClick={() => onValueChange(level.code)}
+              disabled={disabled}
+              className={`h-12 flex flex-col items-center justify-center text-xs sm:text-sm transition-all ${
+                value === level.code
+                  ? 'bg-primary text-primary-foreground shadow-md'
+                  : 'hover:bg-secondary/80'
+              }`}
+              size="sm"
+            >
+              <span className="font-bold text-base">{level.code}</span>
+              <span className="text-xs opacity-75 leading-none mt-0.5">
+                {level.ageRange}
+              </span>
+            </Button>
+          ))}
+        </div>
 
         {selectedLevel && (
           <div className="bg-primary/5 border border-primary/20 rounded-lg p-4">

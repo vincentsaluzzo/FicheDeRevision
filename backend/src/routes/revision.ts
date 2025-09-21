@@ -16,13 +16,13 @@ const debugLog = (message: string, data?: any) => {
 import { uploadMiddleware, handleMulterError } from '../middleware/upload';
 import { processImage } from '../services/imageService';
 import { generateRevision } from '../services/aiService';
-import { generatePDF } from '../services/pdfService';
+import { generateAllPDFs } from '../services/pdfService';
 import {
   createRevisionSheet,
   getRevisionSheet,
   getAllRevisionSheets,
   getRevisionSheetsByEducationLevel,
-  updateRevisionSheetPdfPath,
+  updateRevisionSheetAllPdfs,
   deleteRevisionSheet
 } from '../models/database';
 import { isValidEducationLevel } from '../config/education';
@@ -94,7 +94,9 @@ router.post('/generate', uploadMiddleware.single('image'), handleMulterError, as
       title: aiResponse.title,
       educationLevel: educationLevel.toUpperCase(),
       imagePath: processedImage.processedPath,
-      pdfPath: '',
+      lessonsPdfPath: '',
+      exercisesPdfPath: '',
+      correctionsPdfPath: '',
       content: JSON.stringify(aiResponse),
       aiProvider: provider
     });
@@ -113,16 +115,20 @@ router.post('/generate', uploadMiddleware.single('image'), handleMulterError, as
     debugLog("Sending response to client:", response);
     res.json(response);
 
-    debugLog("Starting background PDF generation...");
-    generatePDF(aiResponse, educationLevel, processedImage.processedPath)
-      .then(pdfPath => {
-        updateRevisionSheetPdfPath(id, pdfPath);
-        debugLog(`PDF generated successfully for ${id}: ${pdfPath}`);
-        console.log(`PDF generated for revision sheet ${id}: ${pdfPath}`);
+    debugLog("Starting background PDF generation (all three versions)...");
+    generateAllPDFs(aiResponse, educationLevel, processedImage.processedPath)
+      .then(({ lessonsPdf, exercisesPdf, correctionsPdf }) => {
+        updateRevisionSheetAllPdfs(id, lessonsPdf, exercisesPdf, correctionsPdf);
+        debugLog(`All PDFs generated successfully for ${id}:`, {
+          lessons: lessonsPdf,
+          exercises: exercisesPdf,
+          corrections: correctionsPdf
+        });
+        console.log(`All PDFs generated for revision sheet ${id}: lessons=${lessonsPdf}, exercises=${exercisesPdf}, corrections=${correctionsPdf}`);
       })
       .catch(error => {
         debugLog(`PDF generation failed for ${id}:`, error);
-        console.error(`Failed to generate PDF for revision sheet ${id}:`, error);
+        console.error(`Failed to generate PDFs for revision sheet ${id}:`, error);
       });
 
     debugLog("=== Revision generation request completed ===");
@@ -168,7 +174,9 @@ router.get('/:id', (req, res) => {
         createdAt: revisionSheet.createdAt,
         updatedAt: revisionSheet.updatedAt,
         hasImage: !!revisionSheet.imagePath,
-        hasPdf: !!revisionSheet.pdfPath
+        hasLessonsPdf: !!revisionSheet.lessonsPdfPath,
+        hasExercisesPdf: !!revisionSheet.exercisesPdfPath,
+        hasCorrectionsPdf: !!revisionSheet.correctionsPdfPath
       }
     });
   } catch (error) {
@@ -208,7 +216,9 @@ router.get('/', (req, res) => {
       createdAt: sheet.createdAt,
       updatedAt: sheet.updatedAt,
       hasImage: !!sheet.imagePath,
-      hasPdf: !!sheet.pdfPath
+      hasLessonsPdf: !!sheet.lessonsPdfPath,
+      hasExercisesPdf: !!sheet.exercisesPdfPath,
+      hasCorrectionsPdf: !!sheet.correctionsPdfPath
     }));
 
     res.json({
@@ -225,6 +235,109 @@ router.get('/', (req, res) => {
   }
 });
 
+// Download lessons PDF
+router.get('/:id/pdf/lessons', (req, res) => {
+  try {
+    const { id } = req.params;
+    const revisionSheet = getRevisionSheet(id);
+
+    if (!revisionSheet) {
+      return res.status(404).json({
+        success: false,
+        message: 'Revision sheet not found'
+      });
+    }
+
+    if (!revisionSheet.lessonsPdfPath) {
+      return res.status(404).json({
+        success: false,
+        message: 'Lessons PDF not yet generated'
+      });
+    }
+
+    const absolutePath = path.resolve(revisionSheet.lessonsPdfPath);
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="${revisionSheet.title}_lecons.pdf"`);
+    res.sendFile(absolutePath);
+  } catch (error) {
+    console.error('Error serving lessons PDF:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to serve lessons PDF'
+    });
+  }
+});
+
+// Download exercises PDF (without answers)
+router.get('/:id/pdf/exercises', (req, res) => {
+  try {
+    const { id } = req.params;
+    const revisionSheet = getRevisionSheet(id);
+
+    if (!revisionSheet) {
+      return res.status(404).json({
+        success: false,
+        message: 'Revision sheet not found'
+      });
+    }
+
+    if (!revisionSheet.exercisesPdfPath) {
+      return res.status(404).json({
+        success: false,
+        message: 'Exercises PDF not yet generated'
+      });
+    }
+
+    const absolutePath = path.resolve(revisionSheet.exercisesPdfPath);
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="${revisionSheet.title}_exercices.pdf"`);
+    res.sendFile(absolutePath);
+  } catch (error) {
+    console.error('Error serving exercises PDF:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to serve exercises PDF'
+    });
+  }
+});
+
+// Download corrections PDF (with answers)
+router.get('/:id/pdf/corrections', (req, res) => {
+  try {
+    const { id } = req.params;
+    const revisionSheet = getRevisionSheet(id);
+
+    if (!revisionSheet) {
+      return res.status(404).json({
+        success: false,
+        message: 'Revision sheet not found'
+      });
+    }
+
+    if (!revisionSheet.correctionsPdfPath) {
+      return res.status(404).json({
+        success: false,
+        message: 'Corrections PDF not yet generated'
+      });
+    }
+
+    const absolutePath = path.resolve(revisionSheet.correctionsPdfPath);
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="${revisionSheet.title}_corrections.pdf"`);
+    res.sendFile(absolutePath);
+  } catch (error) {
+    console.error('Error serving corrections PDF:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to serve corrections PDF'
+    });
+  }
+});
+
+// Legacy endpoint for backward compatibility (returns corrections PDF)
 router.get('/:id/pdf', (req, res) => {
   try {
     const { id } = req.params;
@@ -237,17 +350,17 @@ router.get('/:id/pdf', (req, res) => {
       });
     }
 
-    if (!revisionSheet.pdfPath) {
+    if (!revisionSheet.correctionsPdfPath) {
       return res.status(404).json({
         success: false,
         message: 'PDF not yet generated'
       });
     }
 
-    const absolutePath = path.resolve(revisionSheet.pdfPath);
+    const absolutePath = path.resolve(revisionSheet.correctionsPdfPath);
 
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `inline; filename="${revisionSheet.title}.pdf"`);
+    res.setHeader('Content-Disposition', `inline; filename="${revisionSheet.title}_corrections.pdf"`);
     res.sendFile(absolutePath);
   } catch (error) {
     console.error('Error serving PDF:', error);
