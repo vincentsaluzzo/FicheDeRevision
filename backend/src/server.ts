@@ -13,12 +13,22 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-app.use(
-  cors({
-    origin: process.env.CORS_ORIGIN || "http://localhost:3000",
-    credentials: true,
-  })
-);
+// CORS configuration for Docker/network access
+const corsOrigin = process.env.CORS_ORIGIN;
+const corsOptions = {
+  origin: corsOrigin
+    ? corsOrigin.split(',').map(origin => origin.trim()) // Support multiple origins separated by comma
+    : [
+        // Default origins for Docker/local development
+        "http://localhost:3000",
+        /^http:\/\/192\.168\.\d+\.\d+:3000$/, // Local network IPs
+        /^http:\/\/10\.\d+\.\d+\.\d+:3000$/, // Docker internal IPs
+        /^http:\/\/172\.\d+\.\d+\.\d+:3000$/, // Docker bridge IPs
+      ],
+  credentials: true,
+};
+
+app.use(cors(corsOptions));
 
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
