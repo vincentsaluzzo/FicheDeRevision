@@ -9,7 +9,7 @@ echo "🚀 Installing FicheDeRevision - Revision Sheet Generator"
 echo "========================================================="
 
 # Configuration
-GITHUB_USER="yourusername"  # Replace with your GitHub username
+GITHUB_USER="vincentsaluzzo"  # Replace with your GitHub username
 GITHUB_REPO="FicheDeRevision"
 INSTALL_DIR="revision-generator"
 
