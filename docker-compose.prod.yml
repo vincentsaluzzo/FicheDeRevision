@@ -14,7 +14,7 @@ services:
       - FRONTEND_PORT=3000
       - DATABASE_PATH=/app/data/database/database.sqlite
       - UPLOADS_DIR=/app/data/uploads
-      - NEXT_PUBLIC_API_URL=http://localhost:3001
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - MISTRAL_API_KEY=${MISTRAL_API_KEY}
       - CORS_ORIGIN=${CORS_ORIGIN:-}
