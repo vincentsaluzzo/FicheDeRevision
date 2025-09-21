@@ -1,107 +1,98 @@
 'use client';
 
-import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { RevisionGenerator } from '@/components/RevisionGenerator';
-import { RevisionHistory } from '@/components/RevisionHistory';
-import { RevisionDetail } from '@/components/RevisionDetail';
-import { GraduationCap, Plus, History, Sparkles, ArrowLeft } from 'lucide-react';
-
-type View = 'generator' | 'history' | 'detail';
+import Link from 'next/link';
+import { Plus, History, Sparkles, FileText } from 'lucide-react';
 
 export default function HomePage() {
-  const [currentView, setCurrentView] = useState<View>('generator');
-  const [selectedRevisionId, setSelectedRevisionId] = useState<string | null>(null);
-
-  const handleViewRevisionDetail = (revisionId: string) => {
-    setSelectedRevisionId(revisionId);
-    setCurrentView('detail');
-  };
-
-  const handleBackToHistory = () => {
-    setSelectedRevisionId(null);
-    setCurrentView('history');
-  };
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-      <div className="container mx-auto px-4 py-6 max-w-4xl">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <div className="flex justify-center mb-4">
-            <div className="bg-primary rounded-full p-3">
-              <GraduationCap className="w-8 h-8 text-primary-foreground" />
-            </div>
-          </div>
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">
-            Fiche de Révision
-          </h1>
-          <p className="text-gray-600 text-lg max-w-2xl mx-auto">
-            Transformez vos photos de cours en fiches de révision personnalisées avec l'intelligence artificielle
-          </p>
-        </div>
+    <div className="space-y-6">
+      {/* Welcome Card */}
+      <Card>
+        <CardHeader className="text-center">
+          <CardTitle className="flex items-center justify-center gap-2 text-2xl">
+            <Sparkles className="w-6 h-6" />
+            Bienvenue
+          </CardTitle>
+          <CardDescription className="text-base">
+            Choisissez une action pour commencer
+          </CardDescription>
+        </CardHeader>
+      </Card>
 
-        {/* Navigation */}
-        <Card className="mb-6">
-          <CardContent className="p-4">
-            {currentView === 'detail' ? (
-              <Button
-                variant="outline"
-                onClick={handleBackToHistory}
-                className="h-12 flex items-center justify-center gap-2"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                Retour à l'historique
-              </Button>
-            ) : (
-              <div className="grid grid-cols-2 gap-2">
-                <Button
-                  variant={currentView === 'generator' ? 'default' : 'outline'}
-                  onClick={() => setCurrentView('generator')}
-                  className="h-12 flex items-center justify-center gap-2"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span className="hidden sm:inline">Nouvelle fiche</span>
-                  <span className="sm:hidden">Créer</span>
-                </Button>
-
-                <Button
-                  variant={currentView === 'history' ? 'default' : 'outline'}
-                  onClick={() => setCurrentView('history')}
-                  className="h-12 flex items-center justify-center gap-2"
-                >
-                  <History className="w-4 h-4" />
-                  <span className="hidden sm:inline">Historique</span>
-                  <span className="sm:hidden">Fiches</span>
-                </Button>
-              </div>
-            )}
+      {/* Quick Actions */}
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card className="hover:shadow-lg transition-shadow">
+          <CardContent className="p-6">
+            <Button asChild size="lg" className="w-full h-auto p-6 flex flex-col items-center gap-4">
+              <Link href="/generator">
+                <Plus className="w-8 h-8" />
+                <div className="text-center">
+                  <div className="text-lg font-semibold">Créer une nouvelle fiche</div>
+                  <div className="text-sm opacity-75">
+                    Uploadez une photo de cours et générez votre fiche de révision
+                  </div>
+                </div>
+              </Link>
+            </Button>
           </CardContent>
         </Card>
 
-        {/* Main Content */}
-        <div className="space-y-6">
-          {currentView === 'generator' ? (
-            <RevisionGenerator />
-          ) : currentView === 'history' ? (
-            <RevisionHistory onViewDetail={handleViewRevisionDetail} />
-          ) : (
-            selectedRevisionId && <RevisionDetail revisionId={selectedRevisionId} />
-          )}
-        </div>
-
-        {/* Footer */}
-        <div className="text-center mt-12 pt-8 border-t border-gray-200">
-          <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground mb-2">
-            <Sparkles className="w-4 h-4" />
-            <span>Propulsé par l'intelligence artificielle</span>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Générez des fiches de révision adaptées au système éducatif français
-          </p>
-        </div>
+        <Card className="hover:shadow-lg transition-shadow">
+          <CardContent className="p-6">
+            <Button asChild variant="outline" size="lg" className="w-full h-auto p-6 flex flex-col items-center gap-4">
+              <Link href="/history">
+                <History className="w-8 h-8" />
+                <div className="text-center">
+                  <div className="text-lg font-semibold">Voir l'historique</div>
+                  <div className="text-sm opacity-75">
+                    Accédez à vos fiches de révision précédentes
+                  </div>
+                </div>
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
       </div>
+
+      {/* Features Overview */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Comment ça marche ?</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 md:grid-cols-3 text-center">
+            <div className="space-y-2">
+              <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
+                <Plus className="w-6 h-6 text-primary" />
+              </div>
+              <h3 className="font-semibold">1. Uploadez</h3>
+              <p className="text-sm text-muted-foreground">
+                Prenez une photo de vos cours ou notes
+              </p>
+            </div>
+            <div className="space-y-2">
+              <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
+                <Sparkles className="w-6 h-6 text-primary" />
+              </div>
+              <h3 className="font-semibold">2. Générez</h3>
+              <p className="text-sm text-muted-foreground">
+                L'IA analyse et crée votre fiche personnalisée
+              </p>
+            </div>
+            <div className="space-y-2">
+              <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
+                <FileText className="w-6 h-6 text-primary" />
+              </div>
+              <h3 className="font-semibold">3. Téléchargez</h3>
+              <p className="text-sm text-muted-foreground">
+                Récupérez 3 PDFs : leçons, exercices et corrections
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

@@ -48,11 +48,12 @@ router.post('/generate', uploadMiddleware.single('image'), handleMulterError, as
       });
     }
 
-    const { educationLevel, preferredAI = 'openai' } = req.body;
+    const { educationLevel, preferredAI = 'openai', questionCount = 4 } = req.body;
 
     debugLog("Request parameters:", {
       educationLevel,
-      preferredAI
+      preferredAI,
+      questionCount
     });
 
     if (!educationLevel || !isValidEducationLevel(educationLevel)) {
@@ -71,6 +72,15 @@ router.post('/generate', uploadMiddleware.single('image'), handleMulterError, as
       });
     }
 
+    const numQuestions = parseInt(questionCount as string, 10);
+    if (isNaN(numQuestions) || numQuestions < 1 || numQuestions > 10) {
+      debugLog("Invalid question count:", questionCount);
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid question count. Must be between 1 and 10'
+      });
+    }
+
     debugLog("Processing uploaded image...");
     const processedImage = await processImage(req.file.path);
 
@@ -79,7 +89,8 @@ router.post('/generate', uploadMiddleware.single('image'), handleMulterError, as
     const { response: aiResponse, provider } = await generateRevision(
       processedImage.processedPath,
       educationLevel,
-      preferredAI
+      preferredAI,
+      numQuestions
     );
     const endTime = Date.now();
 

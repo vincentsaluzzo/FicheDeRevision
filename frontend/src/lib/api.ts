@@ -70,12 +70,14 @@ export interface GenerateRevisionResponse {
 export const generateRevisionSheet = async (
   imageFile: File,
   educationLevel: string,
-  preferredAI: 'openai' | 'mistral' = 'openai'
+  preferredAI: 'openai' | 'mistral' = 'openai',
+  questionCount: number = 4
 ): Promise<GenerateRevisionResponse> => {
   const formData = new FormData();
   formData.append('image', imageFile);
   formData.append('educationLevel', educationLevel);
   formData.append('preferredAI', preferredAI);
+  formData.append('questionCount', questionCount.toString());
 
   const response = await api.post('/api/revision/generate', formData, {
     headers: {

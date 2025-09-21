@@ -253,7 +253,8 @@ const generateWithChatCompletions = async (
 
 export const generateRevisionWithOpenAI = async (
   imagePath: string,
-  educationLevel: string
+  educationLevel: string,
+  questionCount: number = 4
 ): Promise<AIResponse> => {
   try {
     debugLog("=== Starting OpenAI generation ===");
@@ -273,7 +274,7 @@ export const generateRevisionWithOpenAI = async (
       preview: imageBase64.substring(0, 100) + "...",
     });
 
-    const prompt = createRevisionPrompt(level.code, level.name, level.ageRange);
+    const prompt = createRevisionPrompt(level.code, level.name, level.ageRange, questionCount);
     debugLog("Generated prompt:", prompt);
 
     const model = process.env.OPENAI_MODEL || "gpt-4o-mini";
@@ -308,7 +309,8 @@ export const generateRevisionWithOpenAI = async (
 
 export const generateRevisionWithMistral = async (
   imagePath: string,
-  educationLevel: string
+  educationLevel: string,
+  questionCount: number = 4
 ): Promise<AIResponse> => {
   try {
     debugLog("=== Starting Mistral generation ===");
@@ -328,7 +330,7 @@ export const generateRevisionWithMistral = async (
       preview: imageBase64.substring(0, 100) + "...",
     });
 
-    const prompt = createRevisionPrompt(level.code, level.name, level.ageRange);
+    const prompt = createRevisionPrompt(level.code, level.name, level.ageRange, questionCount);
     debugLog("Generated prompt:", prompt);
 
     const requestPayload = {
@@ -441,7 +443,8 @@ export const generateRevisionWithMistral = async (
 const createRevisionPrompt = (
   levelCode: string,
   levelName: string,
-  ageRange: string
+  ageRange: string,
+  questionCount: number = 4
 ): string => {
   return `Tu es un enseignant français expérimenté. Analyse cette image de cours/leçon et crée une fiche de révision adaptée au niveau ${levelCode} (${levelName}, ${ageRange}).
 
@@ -449,7 +452,7 @@ La fiche de révision doit contenir :
 
 1. **Titre** : Un titre clair et attrayant pour la leçon
 2. **Résumé** : Les points clés à retenir (3-5 points maximum)
-3. **Exercices** : 3-4 exercices variés adaptés au niveau
+3. **Exercices** : EXACTEMENT ${questionCount} exercices variés adaptés au niveau
 
 Types d'exercices possibles :
 - Questions à choix multiples (QCM)
@@ -457,7 +460,7 @@ Types d'exercices possibles :
 - Compléter les phrases
 - Questions courtes
 
-IMPORTANT : Adapte le vocabulaire et la complexité au niveau ${levelCode}. Les exercices doivent être progressifs et permettre de vérifier la compréhension.
+IMPORTANT : Adapte le vocabulaire et la complexité au niveau ${levelCode}. Les exercices doivent être progressifs et permettre de vérifier la compréhension. Tu dois générer EXACTEMENT ${questionCount} exercices, ni plus ni moins.
 
 Format de réponse attendu (en JSON) :
 {
@@ -550,13 +553,15 @@ const parseAIResponse = (content: string): AIResponse => {
 export const generateRevision = async (
   imagePath: string,
   educationLevel: string,
-  preferredAI: "openai" | "mistral" = "openai"
+  preferredAI: "openai" | "mistral" = "openai",
+  questionCount: number = 4
 ): Promise<{ response: AIResponse; provider: "openai" | "mistral" }> => {
   debugLog("=== Starting revision generation ===");
   debugLog("Parameters:", {
     imagePath,
     educationLevel,
     preferredAI,
+    questionCount,
   });
 
   debugLog("Available API keys:", {
@@ -579,7 +584,8 @@ export const generateRevision = async (
         debugLog("Using OpenAI provider");
         const response = await generateRevisionWithOpenAI(
           imagePath,
-          educationLevel
+          educationLevel,
+          questionCount
         );
         debugLog("=== Revision generation completed with OpenAI ===");
         return { response, provider };
@@ -587,7 +593,8 @@ export const generateRevision = async (
         debugLog("Using Mistral provider");
         const response = await generateRevisionWithMistral(
           imagePath,
-          educationLevel
+          educationLevel,
+          questionCount
         );
         debugLog("=== Revision generation completed with Mistral ===");
         return { response, provider };

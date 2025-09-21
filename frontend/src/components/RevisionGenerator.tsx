@@ -6,10 +6,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Progress } from '@/components/ui/progress';
 import { ImageUpload } from '@/components/ImageUpload';
 import { EducationLevelSelector } from '@/components/EducationLevelSelector';
+import { QuestionCountSelector } from '@/components/QuestionCountSelector';
 import { RevisionPreview } from '@/components/RevisionPreview';
 import { generateRevisionSheet, GenerateRevisionResponse, getAIModels, AIModelInfo, getLessonsPdfUrl, getExercisesPdfUrl, getCorrectionsPdfUrl } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
-import { Sparkles, Download, RotateCcw, Loader2, FileText, BookOpen } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Sparkles, Download, RotateCcw, Loader2, FileText, BookOpen, Eye } from 'lucide-react';
 
 interface GenerationState {
   isGenerating: boolean;
@@ -21,6 +23,7 @@ interface GenerationState {
 export function RevisionGenerator() {
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [educationLevel, setEducationLevel] = useState<string>('');
+  const [questionCount, setQuestionCount] = useState<number>(4);
   const [preferredAI, setPreferredAI] = useState<'openai' | 'mistral'>('openai');
   const [generation, setGeneration] = useState<GenerationState>({
     isGenerating: false,
@@ -35,6 +38,7 @@ export function RevisionGenerator() {
   const [loadingModels, setLoadingModels] = useState(true);
 
   const { toast } = useToast();
+  const router = useRouter();
 
   // Fetch AI model information on component mount
   useEffect(() => {
@@ -66,6 +70,7 @@ export function RevisionGenerator() {
 
   const canGenerate = selectedImage &&
                      educationLevel &&
+                     questionCount &&
                      !generation.isGenerating &&
                      aiModels &&
                      (aiModels.openai.available || aiModels.mistral.available) &&
@@ -89,7 +94,7 @@ export function RevisionGenerator() {
         stage: 'Analyse de l\'image par l\'IA...'
       }));
 
-      const result = await generateRevisionSheet(selectedImage, educationLevel, preferredAI);
+      const result = await generateRevisionSheet(selectedImage, educationLevel, preferredAI, questionCount);
 
       setGeneration(prev => ({
         ...prev,
@@ -132,12 +137,19 @@ export function RevisionGenerator() {
   const handleReset = () => {
     setSelectedImage(null);
     setEducationLevel('');
+    setQuestionCount(4);
     setGeneration({
       isGenerating: false,
       progress: 0,
       stage: '',
       result: null
     });
+  };
+
+  const handleViewDetail = () => {
+    if (generation.result) {
+      router.push(`/revision/${generation.result.id}`);
+    }
   };
 
   // Remove this function since we now import the URL functions from api.ts
@@ -222,15 +234,26 @@ export function RevisionGenerator() {
                 </Button>
               </div>
 
-              <Button
-                onClick={handleReset}
-                variant="ghost"
-                size="lg"
-                className="flex items-center gap-2"
-              >
-                <RotateCcw className="w-4 h-4" />
-                Générer une nouvelle fiche
-              </Button>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <Button
+                  onClick={handleViewDetail}
+                  size="lg"
+                  className="flex items-center gap-2"
+                >
+                  <Eye className="w-4 h-4" />
+                  Voir le détail complet
+                </Button>
+
+                <Button
+                  onClick={handleReset}
+                  variant="ghost"
+                  size="lg"
+                  className="flex items-center gap-2"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                  Générer une nouvelle fiche
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -267,6 +290,12 @@ export function RevisionGenerator() {
       <EducationLevelSelector
         value={educationLevel}
         onValueChange={setEducationLevel}
+        disabled={generation.isGenerating}
+      />
+
+      <QuestionCountSelector
+        value={questionCount}
+        onValueChange={setQuestionCount}
         disabled={generation.isGenerating}
       />
 
