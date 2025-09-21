@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { Request, Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import path from 'path';
 
@@ -29,7 +29,7 @@ import { isValidEducationLevel } from '../config/education';
 
 const router = express.Router();
 
-router.post('/generate', uploadMiddleware.single('image'), handleMulterError, async (req, res) => {
+router.post('/generate', uploadMiddleware.single('image'), handleMulterError, async (req: Request, res: Response) => {
   try {
     debugLog("=== New revision generation request ===");
     debugLog("Request body:", req.body);
@@ -153,14 +153,14 @@ router.post('/generate', uploadMiddleware.single('image'), handleMulterError, as
     });
 
     console.error('Revision generation error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: error instanceof Error ? error.message : 'Failed to generate revision sheet'
     });
   }
 });
 
-router.get('/:id', (req, res) => {
+router.get('/:id', (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const revisionSheet = getRevisionSheet(id);
@@ -192,14 +192,14 @@ router.get('/:id', (req, res) => {
     });
   } catch (error) {
     console.error('Error fetching revision sheet:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Failed to fetch revision sheet'
     });
   }
 });
 
-router.get('/', (req, res) => {
+router.get('/', (req: Request, res: Response) => {
   try {
     const { educationLevel, limit = '50', offset = '0' } = req.query;
 
@@ -239,7 +239,7 @@ router.get('/', (req, res) => {
     });
   } catch (error) {
     console.error('Error fetching revision sheets:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Failed to fetch revision sheets'
     });
@@ -247,7 +247,7 @@ router.get('/', (req, res) => {
 });
 
 // Download lessons PDF
-router.get('/:id/pdf/lessons', (req, res) => {
+router.get('/:id/pdf/lessons', (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const revisionSheet = getRevisionSheet(id);
@@ -273,7 +273,7 @@ router.get('/:id/pdf/lessons', (req, res) => {
     res.sendFile(absolutePath);
   } catch (error) {
     console.error('Error serving lessons PDF:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Failed to serve lessons PDF'
     });
@@ -281,7 +281,7 @@ router.get('/:id/pdf/lessons', (req, res) => {
 });
 
 // Download exercises PDF (without answers)
-router.get('/:id/pdf/exercises', (req, res) => {
+router.get('/:id/pdf/exercises', (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const revisionSheet = getRevisionSheet(id);
@@ -307,7 +307,7 @@ router.get('/:id/pdf/exercises', (req, res) => {
     res.sendFile(absolutePath);
   } catch (error) {
     console.error('Error serving exercises PDF:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Failed to serve exercises PDF'
     });
@@ -315,7 +315,7 @@ router.get('/:id/pdf/exercises', (req, res) => {
 });
 
 // Download corrections PDF (with answers)
-router.get('/:id/pdf/corrections', (req, res) => {
+router.get('/:id/pdf/corrections', (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const revisionSheet = getRevisionSheet(id);
@@ -341,7 +341,7 @@ router.get('/:id/pdf/corrections', (req, res) => {
     res.sendFile(absolutePath);
   } catch (error) {
     console.error('Error serving corrections PDF:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Failed to serve corrections PDF'
     });
@@ -349,7 +349,7 @@ router.get('/:id/pdf/corrections', (req, res) => {
 });
 
 // Legacy endpoint for backward compatibility (returns corrections PDF)
-router.get('/:id/pdf', (req, res) => {
+router.get('/:id/pdf', (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const revisionSheet = getRevisionSheet(id);
@@ -375,14 +375,14 @@ router.get('/:id/pdf', (req, res) => {
     res.sendFile(absolutePath);
   } catch (error) {
     console.error('Error serving PDF:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Failed to serve PDF'
     });
   }
 });
 
-router.get('/:id/image', (req, res) => {
+router.get('/:id/image', (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const revisionSheet = getRevisionSheet(id);
@@ -405,14 +405,14 @@ router.get('/:id/image', (req, res) => {
     res.sendFile(absolutePath);
   } catch (error) {
     console.error('Error serving image:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Failed to serve image'
     });
   }
 });
 
-router.delete('/:id', (req, res) => {
+router.delete('/:id', (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const deleted = deleteRevisionSheet(id);
@@ -430,7 +430,7 @@ router.delete('/:id', (req, res) => {
     });
   } catch (error) {
     console.error('Error deleting revision sheet:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Failed to delete revision sheet'
     });
