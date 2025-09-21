@@ -49,7 +49,7 @@ done
 # Start frontend
 echo "🎨 Starting frontend server on port $FRONTEND_PORT..."
 cd /app/frontend
-npm start &
+PORT=$FRONTEND_PORT npm start &
 FRONTEND_PID=$!
 
 # Wait for frontend to be ready
