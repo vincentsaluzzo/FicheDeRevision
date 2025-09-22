@@ -239,17 +239,17 @@ describe('Revision UI end-to-end', () => {
       const generatorHeading = await page.waitForXPath("//h3[contains(., 'Générateur de fiche de révision')]");
       assert.ok(generatorHeading, 'Generator heading should be visible');
 
-      const [openaiButton] = await page.$x("//button[contains(., 'OpenAI')]");
+      const openaiButton = await page.waitForXPath("//button[contains(., 'OpenAI')]");
       assert.ok(openaiButton, 'OpenAI button should be rendered');
       const openaiDisabled = await page.evaluate(el => (el as any).disabled, openaiButton);
       assert.strictEqual(openaiDisabled, false, 'OpenAI option should be enabled when API keys are configured');
 
-      const [mistralButton] = await page.$x("//button[contains(., 'Mistral AI')]");
+      const mistralButton = await page.waitForXPath("//button[contains(., 'Mistral AI')]");
       assert.ok(mistralButton, 'Mistral button should be rendered');
       const mistralDisabled = await page.evaluate(el => (el as any).disabled, mistralButton);
       assert.strictEqual(mistralDisabled, false, 'Mistral option should be enabled when API keys are configured');
 
-      const [generateButton] = await page.$x("//button[contains(., 'Générer la fiche de révision')]");
+      const generateButton = await page.waitForXPath("//button[contains(., 'Générer la fiche de révision')]");
       assert.ok(generateButton, 'Generate button should exist');
       const generateDisabled = await page.evaluate(el => (el as any).disabled, generateButton);
       assert.strictEqual(generateDisabled, true, 'Generate button should be disabled until requirements are met');

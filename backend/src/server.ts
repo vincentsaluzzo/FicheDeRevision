@@ -21,6 +21,7 @@ const corsOptions = {
     : [
         // Default origins for Docker/local development
         "http://localhost:3000",
+        "http://127.0.0.1:3000",
         /^http:\/\/192\.168\.\d+\.\d+:3000$/, // Local network IPs
         /^http:\/\/10\.\d+\.\d+\.\d+:3000$/, // Docker internal IPs
         /^http:\/\/172\.\d+\.\d+\.\d+:3000$/, // Docker bridge IPs
