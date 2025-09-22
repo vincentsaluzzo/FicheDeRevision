@@ -4,7 +4,8 @@ services:
   revision-generator:
     # Use pre-built image from GitHub Container Registry
     # Replace 'yourusername' with your actual GitHub username
-    image: ghcr.io/yourusername/fichederevision:latest
+    image: ghcr.io/vincentsaluzzo/fichederevision:latest
+    pull_policy: always
     ports:
       - "3000:3000"  # Frontend
       - "3001:3001"  # Backend API
