@@ -43,3 +43,4 @@ backend/database.sqlite-journal
 *.local
 *.tmp
 .tmp/
+backend/.coverage/

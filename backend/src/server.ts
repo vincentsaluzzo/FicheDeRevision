@@ -47,7 +47,7 @@ app.get("/", (req, res) => {
   });
 });
 
-const startServer = async () => {
+export const startServer = async () => {
   try {
     await initializeDatabase();
     console.log("✅ Database initialized successfully");
@@ -69,7 +69,9 @@ const startServer = async () => {
   }
 };
 
-startServer();
+if (process.env.NODE_ENV !== "test") {
+  startServer();
+}
 
 process.on("SIGINT", () => {
   console.log("\n🛑 Server shutting down...");

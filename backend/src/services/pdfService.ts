@@ -279,7 +279,12 @@ export const generateCorrectionsPDF = async (
   }
 };
 
-const generateHTML = (aiResponse: AIResponse, level: any, imagePath?: string, includeAnswers: boolean = true): string => {
+export const generateHTML = (
+  aiResponse: AIResponse,
+  level: any,
+  imagePath?: string,
+  includeAnswers: boolean = true
+): string => {
   const imageSection = imagePath ? `
     <div class="image-section">
       <img src="file://${path.resolve(imagePath)}" alt="Lesson Image" style="max-width: 100%; height: auto; border-radius: 8px; margin-bottom: 20px;">
@@ -344,7 +349,11 @@ const generateHTML = (aiResponse: AIResponse, level: any, imagePath?: string, in
   `;
 };
 
-const generateExerciseHTML = (exercise: Exercise, index: number, includeAnswers: boolean = true): string => {
+export const generateExerciseHTML = (
+  exercise: Exercise,
+  index: number,
+  includeAnswers: boolean = true
+): string => {
   switch (exercise.type) {
     case 'multiple_choice':
       return `
@@ -450,7 +459,7 @@ const generateExerciseHTML = (exercise: Exercise, index: number, includeAnswers:
   }
 };
 
-const formatContent = (content: string): string => {
+export const formatContent = (content: string): string => {
   return content
     .split('\n')
     .map(line => line.trim())
@@ -466,7 +475,7 @@ const formatContent = (content: string): string => {
     .replace(/<\/ul>\s*<ul>/g, '');
 };
 
-const getCSS = (): string => {
+export const getCSS = (): string => {
   return `
     * {
       margin: 0;
@@ -673,7 +682,11 @@ const getCSS = (): string => {
 };
 
 // Generate HTML for lessons PDF (image + content only)
-const generateLessonsHTML = (aiResponse: AIResponse, level: any, imagePath?: string): string => {
+export const generateLessonsHTML = (
+  aiResponse: AIResponse,
+  level: any,
+  imagePath?: string
+): string => {
   const imageSection = imagePath ? `
     <div class="image-section">
       <img src="file://${path.resolve(imagePath)}" alt="Lesson Image" style="max-width: 100%; height: auto; border-radius: 8px; margin-bottom: 20px;">
@@ -725,7 +738,7 @@ const generateLessonsHTML = (aiResponse: AIResponse, level: any, imagePath?: str
 };
 
 // Generate HTML for exercises PDF (exercises only, no answers)
-const generateExercisesHTML = (aiResponse: AIResponse, level: any): string => {
+export const generateExercisesHTML = (aiResponse: AIResponse, level: any): string => {
   const exercisesHTML = aiResponse.exercises.map((exercise, index) =>
     generateExerciseHTML(exercise, index + 1, false)
   ).join('');
@@ -761,7 +774,7 @@ const generateExercisesHTML = (aiResponse: AIResponse, level: any): string => {
 };
 
 // Generate HTML for corrections PDF (answers and explanations only)
-const generateCorrectionsHTML = (aiResponse: AIResponse, level: any): string => {
+export const generateCorrectionsHTML = (aiResponse: AIResponse, level: any): string => {
   const correctionsHTML = aiResponse.exercises.map((exercise, index) =>
     generateCorrectionHTML(exercise, index + 1)
   ).join('');
@@ -809,7 +822,7 @@ const generateCorrectionsHTML = (aiResponse: AIResponse, level: any): string => 
 };
 
 // Generate correction HTML for a single exercise (answers and explanations only)
-const generateCorrectionHTML = (exercise: Exercise, index: number): string => {
+export const generateCorrectionHTML = (exercise: Exercise, index: number): string => {
   return `
     <div class="correction">
       <h3>Exercice ${index}</h3>
