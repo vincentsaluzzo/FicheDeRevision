@@ -174,10 +174,10 @@ export function RevisionPreview({ content, title, educationLevel }: RevisionPrev
 
       <div className="bg-muted/50 rounded-lg p-4 text-center">
         <p className="text-sm text-muted-foreground">
-          ✨ Cette fiche a été générée automatiquement par l'IA
+          ✨ Cette fiche a été générée automatiquement par l’IA
         </p>
         <p className="text-xs text-muted-foreground mt-1">
-          Le PDF est optimisé pour l'impression et contient tous les éléments ci-dessus
+          Le PDF est optimisé pour l’impression et contient tous les éléments ci-dessus
         </p>
       </div>
     </div>

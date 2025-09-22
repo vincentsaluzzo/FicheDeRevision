@@ -3,13 +3,11 @@ node_modules/
 **/node_modules/
 
 # Builds
-backend/dist/
 frontend/.next/
 frontend/out/
 **/.turbo/
 
 # Env & secrets
-backend/.env
 frontend/.env
 
 # Logs
@@ -28,12 +26,14 @@ Thumbs.db
 *.swp
 
 # Uploads and generated assets
-backend/uploads/
-!backend/uploads/.gitkeep
+uploads/
+frontend/uploads/
+!frontend/uploads/.gitkeep
 
 # Database
-backend/database.sqlite
-backend/database.sqlite-journal
+database.sqlite
+database.sqlite-journal
+data/
 
 # Puppeteer/Chrome cache
 **/puppeteer/.local-chromium
@@ -43,3 +43,4 @@ backend/database.sqlite-journal
 *.local
 *.tmp
 .tmp/
+*.tsbuildinfo

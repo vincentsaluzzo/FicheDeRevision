@@ -29,7 +29,7 @@ export function QuestionCountSelector({ value, onValueChange, disabled = false }
           Nombre de questions
         </CardTitle>
         <CardDescription>
-          Choisissez le nombre d'exercices à générer pour votre fiche
+          Choisissez le nombre d’exercices à générer pour votre fiche
         </CardDescription>
       </CardHeader>
       <CardContent>

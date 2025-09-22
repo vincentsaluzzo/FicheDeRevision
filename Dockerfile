@@ -1,86 +1,46 @@
-# Multi-stage Docker build for production
+# Multi-stage Docker build for the unified Next.js application
 
-# Stage 1: Build frontend
-FROM node:18-alpine AS frontend-builder
+FROM node:18-bullseye-slim AS deps
 
-WORKDIR /app/frontend
+WORKDIR /app
 
-# Copy frontend package files
+# Install build tooling for native dependencies
+RUN apt-get update && apt-get install -y python3 make g++ && rm -rf /var/lib/apt/lists/*
+
 COPY frontend/package*.json ./
 RUN npm ci
 
-# Copy frontend source and build
-COPY frontend/ ./
-RUN npm run build
+FROM node:18-bullseye-slim AS builder
 
-# Stage 2: Build backend
-FROM node:18-alpine AS backend-builder
-
-WORKDIR /app/backend
-
-# Copy backend package files
-COPY backend/package*.json ./
-COPY backend/tsconfig.json ./
-RUN npm ci
-
-# Copy backend source and build
-COPY backend/src ./src
-RUN npm run build
-
-# Stage 3: Production image
-FROM node:18-alpine AS production
-
-# Install system dependencies for Puppeteer and curl for healthchecks
-RUN apk add --no-cache \
-    chromium \
-    nss \
-    freetype \
-    freetype-dev \
-    harfbuzz \
-    ca-certificates \
-    ttf-freefont \
-    curl \
-    && rm -rf /var/cache/apk/*
-
-# Tell Puppeteer to skip installing Chromium. We'll be using the installed package.
-ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
-    PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
-
-# Create app directory
 WORKDIR /app
 
-# Create non-root user
-RUN addgroup -g 1001 -S nodejs
-RUN adduser -S nextjs -u 1001
+COPY --from=deps /app/node_modules ./node_modules
+COPY frontend/ ./
 
-# Copy backend production files
-COPY --from=backend-builder /app/backend/dist ./backend/dist
-COPY --from=backend-builder /app/backend/package*.json ./backend/
-COPY --from=backend-builder /app/backend/node_modules ./backend/node_modules
+RUN npm run build
 
-# Copy frontend production files
-COPY --from=frontend-builder /app/frontend/.next ./frontend/.next
-COPY --from=frontend-builder /app/frontend/public ./frontend/public
-COPY --from=frontend-builder /app/frontend/package*.json ./frontend/
-COPY --from=frontend-builder /app/frontend/node_modules ./frontend/node_modules
-COPY --from=frontend-builder /app/frontend/next.config.js ./frontend/
+FROM node:18-bullseye-slim AS runner
 
-# Create necessary directories
-RUN mkdir -p /app/data/uploads /app/data/database
-RUN chown -R nextjs:nodejs /app
+WORKDIR /app
 
-# Switch to non-root user
+ENV NODE_ENV=production
+ENV PORT=3000
+ENV NEXT_TELEMETRY_DISABLED=1
+
+COPY --from=builder /app ./
+
+RUN npm prune --omit=dev
+
+RUN addgroup --system --gid 1001 nodejs \
+  && adduser --system --uid 1001 nextjs \
+  && mkdir -p /app/data/uploads /app/data/database \
+  && chown -R nextjs:nodejs /app
+
+COPY --chown=nextjs:nodejs docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
 USER nextjs
 
-# Expose ports
-EXPOSE 3000 3001
+EXPOSE 3000
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost:3001/api/health || exit 1
-
-# Copy startup script
-COPY --chown=nextjs:nodejs docker-entrypoint.sh /app/
-RUN chmod +x /app/docker-entrypoint.sh
-
-ENTRYPOINT ["/app/docker-entrypoint.sh"]
+ENTRYPOINT ["docker-entrypoint.sh"]

@@ -276,7 +276,7 @@ export function RevisionGenerator() {
             Générateur de fiche de révision
           </CardTitle>
           <CardDescription>
-            Transformez une photo de cours en fiche de révision personnalisée avec l'IA
+            Transformez une photo de cours en fiche de révision personnalisée avec l’IA
           </CardDescription>
         </CardHeader>
       </Card>
@@ -304,7 +304,7 @@ export function RevisionGenerator() {
         <CardHeader>
           <CardTitle className="text-base">Intelligence artificielle</CardTitle>
           <CardDescription>
-            Choisissez le modèle d'IA à utiliser pour générer votre fiche
+            Choisissez le modèle d’IA à utiliser pour générer votre fiche
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -372,7 +372,7 @@ export function RevisionGenerator() {
               <Progress value={generation.progress} className="w-full" />
 
               <p className="text-sm text-muted-foreground">
-                La génération peut prendre jusqu'à 2 minutes selon la complexité de l'image...
+                La génération peut prendre jusqu’à 2 minutes selon la complexité de l’image...
               </p>
             </div>
           </CardContent>

@@ -36,7 +36,6 @@ docker-compose up -d
 
 # 3. Accéder à l'application
 # Interface web : http://localhost:3000
-# API : http://localhost:3001
 ```
 
 ### Contenu du fichier `.env` :
@@ -100,7 +99,6 @@ docker-compose up -d --build
 
 ### 4. Accéder à l'application
 - **Interface web** : http://localhost:3000
-- **API** : http://localhost:3001
 
 ---
 
@@ -110,28 +108,16 @@ docker-compose up -d --build
 - Node.js 18+
 - npm ou yarn
 
-### Backend
-```bash
-cd backend
-npm install
-
-# Créer le fichier .env
-cp .env.example .env
-# Éditer avec vos clés API
-
-# Démarrer en mode développement
-npm run dev
-```
-
-### Frontend
+### Installation et démarrage
 ```bash
 cd frontend
 npm install
 
 # Créer le fichier .env.local
-cp .env.local.example .env.local
+cp ../.env.example .env.local
+# Éditer avec vos clés API (OpenAI et/ou Mistral)
 
-# Démarrer en mode développement
+# Lancer le serveur Next.js (API + interface)
 npm run dev
 ```
 
@@ -139,28 +125,25 @@ npm run dev
 
 ### Variables d'environnement
 
-#### Backend (`backend/.env`)
+Les variables suivantes peuvent être définies dans `.env` (Docker) ou `.env.local` (développement) :
+
 ```env
-PORT=3001
-NODE_ENV=development
+# Clés API (au moins une est requise)
 OPENAI_API_KEY=your_openai_api_key
 MISTRAL_API_KEY=your_mistral_api_key
-DATABASE_PATH=./database.sqlite
+
+# Configuration serveur
+PORT=3000
+DATABASE_PATH=./data/database.sqlite
 UPLOADS_DIR=./uploads
 MAX_FILE_SIZE=10485760
-CORS_ORIGIN=http://localhost:3000
 
-# AI Model Configuration
+# Configuration IA
 OPENAI_MODEL=gpt-4o-mini
 OPENAI_MAX_OUTPUT_TOKENS=100000
 
-# Debug Options
+# Debug
 DEBUG_AI=false
-```
-
-#### Frontend (`frontend/.env.local`)
-```env
-NEXT_PUBLIC_API_URL=http://localhost:3001
 ```
 
 ### Clés API
@@ -222,11 +205,11 @@ OPENAI_MAX_OUTPUT_TOKENS=100000   # Tokens de sortie maximum
 - **PWA** - Support application web progressive
 
 ### Backend
-- **Express.js** - Serveur API REST
+- **Next.js API Routes** - Gestion des endpoints serveur
 - **TypeScript** - Typage statique
-- **SQLite** - Base de données locale
-- **Multer** - Upload de fichiers
+- **Better SQLite3** - Base de données locale performante
 - **Sharp** - Traitement d'images
+- **PDFKit** - Génération de PDFs
 
 ### Intelligence Artificielle
 - **OpenAI GPT-4o Mini** - Modèle rapide et économique pour l'analyse d'images
@@ -234,8 +217,8 @@ OPENAI_MAX_OUTPUT_TOKENS=100000   # Tokens de sortie maximum
 - **Configurable** - Possibilité d'utiliser d'autres modèles (GPT-4o, GPT-5, etc.)
 
 ### Génération PDF
-- **Puppeteer** - Génération PDF haute qualité
-- **Templates HTML/CSS** - Mise en page professionnelle
+- **PDFKit** - Génération PDF haute qualité
+- **Mise en page vectorielle** - Typographie optimisée pour l'impression
 
 ## 🐳 Déploiement sur NAS
 
@@ -258,8 +241,7 @@ OPENAI_MAX_OUTPUT_TOKENS=100000   # Tokens de sortie maximum
 ```
 
 ### Configuration réseau
-- Port 3000 : Interface utilisateur
-- Port 3001 : API backend
+- Port 3000 : Interface utilisateur + API Next.js
 - Accès local : http://ip-du-nas:3000
 
 ## 📱 Utilisation

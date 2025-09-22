@@ -1,8 +1,20 @@
 import sharp from 'sharp';
 import fs from 'fs';
+import { promises as fsPromises } from 'fs';
 import path from 'path';
+import { randomUUID } from 'crypto';
 
 const DEBUG_AI = process.env.DEBUG_AI === 'true';
+const MAX_FILE_SIZE = parseInt(process.env.MAX_FILE_SIZE || '10485760', 10);
+
+const ALLOWED_MIME_TYPES = [
+  'image/jpeg',
+  'image/jpg',
+  'image/png',
+  'image/webp',
+  'image/heic',
+  'image/heif',
+];
 
 const debugLog = (message: string, data?: any) => {
   if (DEBUG_AI) {
@@ -100,6 +112,66 @@ export const processImage = async (imagePath: string): Promise<ProcessedImage> =
     console.error('Error processing image:', error);
     throw new Error(`Failed to process image: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
+};
+
+export const getUploadsDir = (): string => {
+  const configured = process.env.UPLOADS_DIR;
+  return configured ? path.resolve(configured) : path.join(process.cwd(), 'uploads');
+};
+
+const ensureUploadsDir = async () => {
+  const uploadsDir = getUploadsDir();
+  await fsPromises.mkdir(uploadsDir, { recursive: true });
+  return uploadsDir;
+};
+
+const getExtensionFromFile = (file: File): string => {
+  const nameExt = path.extname(file.name);
+  if (nameExt) {
+    return nameExt;
+  }
+
+  switch (file.type) {
+    case 'image/png':
+      return '.png';
+    case 'image/webp':
+      return '.webp';
+    case 'image/heic':
+    case 'image/heif':
+      return '.heic';
+    default:
+      return '.jpg';
+  }
+};
+
+export const saveUploadedFile = async (file: File): Promise<string> => {
+  if (!(file instanceof File)) {
+    throw new Error('Invalid file upload');
+  }
+
+  if (!ALLOWED_MIME_TYPES.includes(file.type)) {
+    throw new Error(`Invalid file type. Allowed types: ${ALLOWED_MIME_TYPES.join(', ')}`);
+  }
+
+  if (file.size === 0) {
+    throw new Error('Empty file provided');
+  }
+
+  if (file.size > MAX_FILE_SIZE) {
+    throw new Error(`File too large. Maximum size: ${Math.round(MAX_FILE_SIZE / 1024 / 1024)}MB`);
+  }
+
+  const uploadsDir = await ensureUploadsDir();
+  const extension = getExtensionFromFile(file);
+  const filename = `image_${randomUUID()}${extension}`;
+  const targetPath = path.join(uploadsDir, filename);
+
+  const arrayBuffer = await file.arrayBuffer();
+  await fsPromises.writeFile(targetPath, Buffer.from(arrayBuffer));
+
+  debugLog('Uploaded file saved', { targetPath, size: file.size, mimeType: file.type });
+
+  return targetPath;
 };
 
 export const deleteImageFiles = async (imagePaths: string[]): Promise<void> => {

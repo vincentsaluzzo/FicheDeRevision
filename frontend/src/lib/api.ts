@@ -1,28 +1,8 @@
 import axios from 'axios';
 
-// Dynamic API URL configuration for network access
-const getApiBaseUrl = (): string => {
-  // If we're in the browser (client-side)
-  if (typeof window !== 'undefined') {
-    // Use the same host as the current page, but port 3001
-    const currentHost = window.location.hostname;
-    return `http://${currentHost}:3001`;
-  }
-
-  // For server-side rendering, use the environment variable
-  return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-};
-
 export const api = axios.create({
+  baseURL: '/',
   timeout: 60000, // 60 seconds for AI processing
-});
-
-// Set baseURL dynamically for each request
-api.interceptors.request.use((config) => {
-  if (!config.baseURL) {
-    config.baseURL = getApiBaseUrl();
-  }
-  return config;
 });
 
 export interface EducationLevel {
@@ -131,15 +111,15 @@ export const getEducationLevels = async (): Promise<{ levels: EducationLevel[]; 
 };
 
 export const getLessonsPdfUrl = (id: string): string => {
-  return `${getApiBaseUrl()}/api/revision/${id}/pdf/lessons`;
+  return `/api/revision/${id}/pdf/lessons`;
 };
 
 export const getExercisesPdfUrl = (id: string): string => {
-  return `${getApiBaseUrl()}/api/revision/${id}/pdf/exercises`;
+  return `/api/revision/${id}/pdf/exercises`;
 };
 
 export const getCorrectionsPdfUrl = (id: string): string => {
-  return `${getApiBaseUrl()}/api/revision/${id}/pdf/corrections`;
+  return `/api/revision/${id}/pdf/corrections`;
 };
 
 // Legacy function for backward compatibility
@@ -148,7 +128,7 @@ export const getPdfUrl = (id: string): string => {
 };
 
 export const getImageUrl = (id: string): string => {
-  return `${getApiBaseUrl()}/api/revision/${id}/image`;
+  return `/api/revision/${id}/image`;
 };
 
 export const deleteRevisionSheet = async (id: string): Promise<{ success: boolean; message: string }> => {

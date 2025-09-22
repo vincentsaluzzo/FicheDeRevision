@@ -45,7 +45,7 @@ export default function HomePage() {
               <Link href="/history">
                 <History className="w-8 h-8" />
                 <div className="text-center">
-                  <div className="text-lg font-semibold">Voir l'historique</div>
+                  <div className="text-lg font-semibold">Voir l’historique</div>
                   <div className="text-sm opacity-75">
                     Accédez à vos fiches de révision précédentes
                   </div>
@@ -78,7 +78,7 @@ export default function HomePage() {
               </div>
               <h3 className="font-semibold">2. Générez</h3>
               <p className="text-sm text-muted-foreground">
-                L'IA analyse et crée votre fiche personnalisée
+                L’IA analyse et crée votre fiche personnalisée
               </p>
             </div>
             <div className="space-y-2">

@@ -19,21 +19,6 @@ export interface RevisionSheet {
   updatedAt: Date;
 }
 
-export interface GenerateRevisionRequest {
-  image: Express.Multer.File;
-  educationLevel: string;
-  preferredAI?: 'openai' | 'mistral';
-}
-
-export interface GenerateRevisionResponse {
-  id: string;
-  title: string;
-  content: string;
-  pdfUrl: string;
-  success: boolean;
-  message?: string;
-}
-
 export interface AIResponse {
   title: string;
   content: string;

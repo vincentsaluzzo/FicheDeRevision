@@ -3,12 +3,11 @@ import path from 'path';
 import PDFDocument from 'pdfkit';
 import { AIResponse, Exercise } from '../types';
 import { getEducationLevel } from '../config/education';
+import { getUploadsDir } from './imageService';
 
 type ContentBlock =
   | { type: 'paragraph'; text: string }
   | { type: 'bulletList'; items: string[] };
-
-type PdfDoc = PDFKit.PDFDocument;
 
 interface ExerciseSectionOptions {
   heading: string;
@@ -168,12 +167,12 @@ export const generateCorrectionsPDF = async (
 };
 
 const createPdfPath = (suffix: string): string => {
-  const uploadsDir = process.env.UPLOADS_DIR || './uploads';
+  const uploadsDir = getUploadsDir();
   ensureDirectory(uploadsDir);
   return path.join(uploadsDir, `revision_${suffix}_${Date.now()}.pdf`);
 };
 
-const createPdf = async (filePath: string, build: (doc: PdfDoc) => void): Promise<string> => {
+const createPdf = async (filePath: string, build: (doc: PDFDocument) => void): Promise<string> => {
   const doc = new PDFDocument({
     size: 'A4',
     margins: {
@@ -211,7 +210,7 @@ const ensureDirectory = (dirPath: string): void => {
 };
 
 const addHeader = (
-  doc: PdfDoc,
+  doc: PDFDocument,
   title: string,
   level: { code: string; name: string; ageRange: string },
   subtitle: string
@@ -245,7 +244,7 @@ const addHeader = (
   doc.moveDown(0.8).strokeColor('#000000').fillColor('#1f2933');
 };
 
-const addImageSection = (doc: PdfDoc, imagePath?: string): void => {
+const addImageSection = (doc: PDFDocument, imagePath?: string): void => {
   if (!imagePath) {
     return;
   }
@@ -267,7 +266,7 @@ const addImageSection = (doc: PdfDoc, imagePath?: string): void => {
   }
 };
 
-const addContentSection = (doc: PdfDoc, content: string): void => {
+const addContentSection = (doc: PDFDocument, content: string): void => {
   const blocks = parseContent(content);
   if (blocks.length === 0) {
     return;
@@ -292,7 +291,7 @@ const addContentSection = (doc: PdfDoc, content: string): void => {
   doc.moveDown(0.8);
 };
 
-const addIntroParagraph = (doc: PdfDoc, text: string): void => {
+const addIntroParagraph = (doc: PDFDocument, text: string): void => {
   doc
     .font('Helvetica')
     .fontSize(12)
@@ -303,7 +302,7 @@ const addIntroParagraph = (doc: PdfDoc, text: string): void => {
 };
 
 const addExercisesSection = (
-  doc: PdfDoc,
+  doc: PDFDocument,
   exercises: Exercise[],
   options: ExerciseSectionOptions
 ): void => {
@@ -319,7 +318,7 @@ const addExercisesSection = (
 };
 
 const addExercise = (
-  doc: PdfDoc,
+  doc: PDFDocument,
   exercise: Exercise,
   index: number,
   options: ExerciseSectionOptions
@@ -391,7 +390,7 @@ const addExercise = (
   doc.moveDown(0.8).fillColor('#1f2933');
 };
 
-const addAnswerSpace = (doc: PdfDoc, exercise: Exercise): void => {
+const addAnswerSpace = (doc: PDFDocument, exercise: Exercise): void => {
   doc
     .font('Helvetica-Bold')
     .fontSize(11)
@@ -431,7 +430,7 @@ const addAnswerSpace = (doc: PdfDoc, exercise: Exercise): void => {
   doc.moveDown(0.4);
 };
 
-const addFooter = (doc: PdfDoc, lines: string[]): void => {
+const addFooter = (doc: PDFDocument, lines: string[]): void => {
   if (!lines.length) {
     return;
   }
@@ -453,7 +452,7 @@ const addFooter = (doc: PdfDoc, lines: string[]): void => {
   doc.fillColor('#1f2933');
 };
 
-const addSectionTitle = (doc: PdfDoc, title: string): void => {
+const addSectionTitle = (doc: PDFDocument, title: string): void => {
   doc
     .font('Helvetica-Bold')
     .fontSize(15)

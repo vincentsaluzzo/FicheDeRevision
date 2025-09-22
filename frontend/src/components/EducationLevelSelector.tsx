@@ -16,7 +16,7 @@ const EDUCATION_LEVELS: EducationLevel[] = [
   {
     code: 'CP',
     name: 'Cours Préparatoire',
-    description: 'Première année d\'apprentissage de la lecture et de l\'écriture',
+    description: 'Première année d’apprentissage de la lecture et de l’écriture',
     ageRange: '6-7 ans'
   },
   {
@@ -46,7 +46,7 @@ const EDUCATION_LEVELS: EducationLevel[] = [
   {
     code: '6E',
     name: 'Sixième',
-    description: 'Première année du collège, cycle d\'adaptation',
+    description: 'Première année du collège, cycle d’adaptation',
     ageRange: '11-12 ans'
   },
   {
@@ -90,7 +90,7 @@ export function EducationLevelSelector({
           Niveau scolaire
         </CardTitle>
         <CardDescription>
-          Choisissez le niveau de l'élève pour adapter le contenu de la fiche de révision
+          Choisissez le niveau de l’élève pour adapter le contenu de la fiche de révision
         </CardDescription>
       </CardHeader>
 

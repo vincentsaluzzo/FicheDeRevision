@@ -1,76 +1,121 @@
-import Database from 'better-sqlite3';
+import BetterSqlite3 from 'better-sqlite3';
 import path from 'path';
 import fs from 'fs';
 import { DatabaseRevisionSheet, RevisionSheet } from '../types';
+import { getUploadsDir } from '../services/imageService';
 
-const dbPath = process.env.DATABASE_PATH || './database.sqlite';
-const uploadsDir = process.env.UPLOADS_DIR || './uploads';
+const resolveDatabasePath = (): string => {
+  const configured = process.env.DATABASE_PATH;
+  return configured ? path.resolve(configured) : path.join(process.cwd(), 'data', 'database.sqlite');
+};
 
-let db: Database.Database;
+type SqliteDatabase = BetterSqlite3;
+
+let db: SqliteDatabase | null = null;
+let initializationPromise: Promise<void> | null = null;
+
+const getDatabaseInstance = (): SqliteDatabase => {
+  if (!db) {
+    throw new Error('Database not initialized. Call ensureDatabase() first.');
+  }
+  return db;
+};
 
 export const initializeDatabase = async (): Promise<void> => {
+  if (db) {
+    return;
+  }
+
+  if (initializationPromise) {
+    await initializationPromise;
+    return;
+  }
+
+  initializationPromise = (async () => {
+    try {
+      const uploadsDir = getUploadsDir();
+      if (!fs.existsSync(uploadsDir)) {
+        fs.mkdirSync(uploadsDir, { recursive: true });
+      }
+
+      const databasePath = resolveDatabasePath();
+      const databaseDir = path.dirname(databasePath);
+      if (!fs.existsSync(databaseDir)) {
+        fs.mkdirSync(databaseDir, { recursive: true });
+      }
+
+      db = new BetterSqlite3(databasePath);
+
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS revision_sheets (
+          id TEXT PRIMARY KEY,
+          title TEXT NOT NULL,
+          education_level TEXT NOT NULL,
+          image_path TEXT NOT NULL,
+          lessons_pdf_path TEXT,
+          exercises_pdf_path TEXT,
+          corrections_pdf_path TEXT,
+          content TEXT NOT NULL,
+          ai_provider TEXT NOT NULL,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+
+      // Migration: Add new columns if they don't exist (for existing databases)
+      try {
+        db.exec(`ALTER TABLE revision_sheets ADD COLUMN lessons_pdf_path TEXT`);
+      } catch (e) {
+        // Column already exists, ignore
+      }
+
+      try {
+        db.exec(`ALTER TABLE revision_sheets ADD COLUMN exercises_pdf_path TEXT`);
+      } catch (e) {
+        // Column already exists, ignore
+      }
+
+      try {
+        db.exec(`ALTER TABLE revision_sheets ADD COLUMN corrections_pdf_path TEXT`);
+      } catch (e) {
+        // Column already exists, ignore
+      }
+
+      db.exec(`
+        CREATE INDEX IF NOT EXISTS idx_revision_sheets_education_level
+        ON revision_sheets(education_level)
+      `);
+
+      db.exec(`
+        CREATE INDEX IF NOT EXISTS idx_revision_sheets_created_at
+        ON revision_sheets(created_at DESC)
+      `);
+
+      console.log('Database tables initialized successfully');
+    } catch (error) {
+      db = null;
+      console.error('Error initializing database:', error);
+      throw error;
+    }
+  })();
+
   try {
-    if (!fs.existsSync(uploadsDir)) {
-      fs.mkdirSync(uploadsDir, { recursive: true });
-    }
+    await initializationPromise;
+  } finally {
+    initializationPromise = null;
+  }
+};
 
-    db = new Database(dbPath);
-
-    db.exec(`
-      CREATE TABLE IF NOT EXISTS revision_sheets (
-        id TEXT PRIMARY KEY,
-        title TEXT NOT NULL,
-        education_level TEXT NOT NULL,
-        image_path TEXT NOT NULL,
-        lessons_pdf_path TEXT,
-        exercises_pdf_path TEXT,
-        corrections_pdf_path TEXT,
-        content TEXT NOT NULL,
-        ai_provider TEXT NOT NULL,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
-
-    // Migration: Add new columns if they don't exist (for existing databases)
-    try {
-      db.exec(`ALTER TABLE revision_sheets ADD COLUMN lessons_pdf_path TEXT`);
-    } catch (e) {
-      // Column already exists, ignore
-    }
-
-    try {
-      db.exec(`ALTER TABLE revision_sheets ADD COLUMN exercises_pdf_path TEXT`);
-    } catch (e) {
-      // Column already exists, ignore
-    }
-
-    try {
-      db.exec(`ALTER TABLE revision_sheets ADD COLUMN corrections_pdf_path TEXT`);
-    } catch (e) {
-      // Column already exists, ignore
-    }
-
-    db.exec(`
-      CREATE INDEX IF NOT EXISTS idx_revision_sheets_education_level
-      ON revision_sheets(education_level)
-    `);
-
-    db.exec(`
-      CREATE INDEX IF NOT EXISTS idx_revision_sheets_created_at
-      ON revision_sheets(created_at DESC)
-    `);
-
-    console.log('Database tables initialized successfully');
-  } catch (error) {
-    console.error('Error initializing database:', error);
-    throw error;
+export const ensureDatabase = async (): Promise<void> => {
+  if (!db) {
+    await initializeDatabase();
   }
 };
 
 export const createRevisionSheet = (sheet: Omit<RevisionSheet, 'createdAt' | 'updatedAt'>): RevisionSheet => {
+  const database = getDatabaseInstance();
   const now = new Date();
-  const stmt = db.prepare(`
+  const stmt = database.prepare(`
     INSERT INTO revision_sheets (
       id, title, education_level, image_path, lessons_pdf_path, exercises_pdf_path, corrections_pdf_path, content, ai_provider, created_at, updated_at
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -98,7 +143,8 @@ export const createRevisionSheet = (sheet: Omit<RevisionSheet, 'createdAt' | 'up
 };
 
 export const getRevisionSheet = (id: string): RevisionSheet | null => {
-  const stmt = db.prepare('SELECT * FROM revision_sheets WHERE id = ?');
+  const database = getDatabaseInstance();
+  const stmt = database.prepare('SELECT * FROM revision_sheets WHERE id = ?');
   const row = stmt.get(id) as DatabaseRevisionSheet | undefined;
 
   if (!row) return null;
@@ -119,7 +165,8 @@ export const getRevisionSheet = (id: string): RevisionSheet | null => {
 };
 
 export const getAllRevisionSheets = (limit: number = 50, offset: number = 0): RevisionSheet[] => {
-  const stmt = db.prepare(`
+  const database = getDatabaseInstance();
+  const stmt = database.prepare(`
     SELECT * FROM revision_sheets
     ORDER BY created_at DESC
     LIMIT ? OFFSET ?
@@ -143,7 +190,8 @@ export const getAllRevisionSheets = (limit: number = 50, offset: number = 0): Re
 };
 
 export const getRevisionSheetsByEducationLevel = (educationLevel: string): RevisionSheet[] => {
-  const stmt = db.prepare(`
+  const database = getDatabaseInstance();
+  const stmt = database.prepare(`
     SELECT * FROM revision_sheets
     WHERE education_level = ?
     ORDER BY created_at DESC
@@ -167,7 +215,8 @@ export const getRevisionSheetsByEducationLevel = (educationLevel: string): Revis
 };
 
 export const updateRevisionSheetAllPdfs = (id: string, lessonsPdfPath: string, exercisesPdfPath: string, correctionsPdfPath: string): void => {
-  const stmt = db.prepare(`
+  const database = getDatabaseInstance();
+  const stmt = database.prepare(`
     UPDATE revision_sheets
     SET lessons_pdf_path = ?, exercises_pdf_path = ?, corrections_pdf_path = ?, updated_at = CURRENT_TIMESTAMP
     WHERE id = ?
@@ -178,7 +227,8 @@ export const updateRevisionSheetAllPdfs = (id: string, lessonsPdfPath: string, e
 
 // Legacy function for backward compatibility
 export const updateRevisionSheetPdfPaths = (id: string, exercisesPdfPath: string, correctionsPdfPath: string): void => {
-  const stmt = db.prepare(`
+  const database = getDatabaseInstance();
+  const stmt = database.prepare(`
     UPDATE revision_sheets
     SET exercises_pdf_path = ?, corrections_pdf_path = ?, updated_at = CURRENT_TIMESTAMP
     WHERE id = ?
@@ -189,7 +239,8 @@ export const updateRevisionSheetPdfPaths = (id: string, exercisesPdfPath: string
 
 // Keep backward compatibility
 export const updateRevisionSheetPdfPath = (id: string, pdfPath: string): void => {
-  const stmt = db.prepare(`
+  const database = getDatabaseInstance();
+  const stmt = database.prepare(`
     UPDATE revision_sheets
     SET corrections_pdf_path = ?, updated_at = CURRENT_TIMESTAMP
     WHERE id = ?
@@ -199,20 +250,19 @@ export const updateRevisionSheetPdfPath = (id: string, pdfPath: string): void =>
 };
 
 export const deleteRevisionSheet = (id: string): boolean => {
-  const stmt = db.prepare('DELETE FROM revision_sheets WHERE id = ?');
+  const database = getDatabaseInstance();
+  const stmt = database.prepare('DELETE FROM revision_sheets WHERE id = ?');
   const result = stmt.run(id);
   return result.changes > 0;
 };
 
-export const getDatabase = (): Database.Database => {
-  if (!db) {
-    throw new Error('Database not initialized. Call initializeDatabase() first.');
-  }
-  return db;
+export const getDatabase = (): SqliteDatabase => {
+  return getDatabaseInstance();
 };
 
 export const closeDatabase = (): void => {
   if (db) {
     db.close();
+    db = null;
   }
 };

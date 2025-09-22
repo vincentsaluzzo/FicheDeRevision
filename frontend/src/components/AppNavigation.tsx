@@ -20,7 +20,7 @@ export function AppNavigation() {
           <Button asChild variant="outline" className="h-12 flex items-center justify-center gap-2">
             <Link href="/history">
               <ArrowLeft className="w-4 h-4" />
-              Retour à l'historique
+              Retour à l’historique
             </Link>
           </Button>
         </CardContent>

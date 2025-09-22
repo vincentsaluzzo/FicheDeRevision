@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { getAllRevisionSheets, RevisionSheet, getLessonsPdfUrl, getExercisesPdfUrl, getCorrectionsPdfUrl } from '@/lib/api';
@@ -36,27 +36,27 @@ export function RevisionHistory({ onViewDetail }: RevisionHistoryProps) {
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
-  useEffect(() => {
-    loadHistory();
-  }, []);
-
-  const loadHistory = async () => {
+  const loadHistory = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
       const response = await getAllRevisionSheets();
       setSheets(response.data);
     } catch (err) {
-      setError('Impossible de charger l\'historique');
+      setError('Impossible de charger l’historique');
       toast({
         title: "Erreur de chargement",
-        description: "Impossible de charger l'historique des fiches de révision",
+        description: "Impossible de charger l’historique des fiches de révision",
         variant: "destructive",
       });
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
+
+  useEffect(() => {
+    void loadHistory();
+  }, [loadHistory]);
 
   const handleDownloadLessons = (sheet: RevisionSheet, event: React.MouseEvent) => {
     event.stopPropagation();
@@ -133,7 +133,7 @@ export function RevisionHistory({ onViewDetail }: RevisionHistoryProps) {
         <CardContent className="flex items-center justify-center p-8">
           <div className="flex items-center gap-2 text-muted-foreground">
             <Loader2 className="w-4 h-4 animate-spin" />
-            Chargement de l'historique...
+            Chargement de l’historique...
           </div>
         </CardContent>
       </Card>

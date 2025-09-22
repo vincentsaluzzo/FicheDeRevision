@@ -5,9 +5,10 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Camera, Upload, X, RotateCcw } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import Image from 'next/image';
 
 interface ImageUploadProps {
-  onImageSelect: (file: File) => void;
+  onImageSelect: (file: File | null) => void;
   selectedImage: File | null;
   disabled?: boolean;
   className?: string;
@@ -140,7 +141,7 @@ export function ImageUpload({
   };
 
   const clearImage = () => {
-    onImageSelect(null as any);
+    onImageSelect(null);
     setPreview(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
@@ -191,10 +192,14 @@ export function ImageUpload({
       <Card className={cn("w-full", className)}>
         <CardContent className="p-4">
           <div className="relative">
-            <img
+            <Image
               src={preview}
-              alt="Preview"
+              alt="Prévisualisation"
+              width={1024}
+              height={768}
               className="w-full h-auto max-h-[60vh] object-cover rounded-lg"
+              sizes="(max-width: 1024px) 100vw, 1024px"
+              unoptimized
             />
 
             <Button

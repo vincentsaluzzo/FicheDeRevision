@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { RevisionPreview } from '@/components/RevisionPreview';
 import { getRevisionSheet, getLessonsPdfUrl, getExercisesPdfUrl, getCorrectionsPdfUrl, getImageUrl, RevisionSheet } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
+import Image from 'next/image';
 import {
   Download,
   Loader2,
@@ -36,11 +37,7 @@ export function RevisionDetail({ revisionId }: RevisionDetailProps) {
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
-  useEffect(() => {
-    loadRevisionSheet();
-  }, [revisionId]);
-
-  const loadRevisionSheet = async () => {
+  const loadRevisionSheet = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -56,7 +53,11 @@ export function RevisionDetail({ revisionId }: RevisionDetailProps) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [revisionId, toast]);
+
+  useEffect(() => {
+    void loadRevisionSheet();
+  }, [loadRevisionSheet]);
 
   const handleDownloadLessons = () => {
     if (!sheet?.hasLessonsPdf) {
@@ -272,11 +273,14 @@ export function RevisionDetail({ revisionId }: RevisionDetailProps) {
           </CardHeader>
           <CardContent>
             <div className="flex justify-center">
-              <img
+              <Image
                 src={getImageUrl(sheet.id)}
                 alt="Image source du cours"
-                className="max-w-full h-auto rounded-lg border shadow-sm"
-                style={{ maxHeight: '400px' }}
+                width={800}
+                height={600}
+                className="w-full h-auto max-h-[400px] rounded-lg border shadow-sm object-contain"
+                sizes="(max-width: 800px) 100vw, 800px"
+                unoptimized
               />
             </div>
           </CardContent>
