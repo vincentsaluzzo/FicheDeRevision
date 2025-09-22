@@ -1,7 +1,7 @@
 # Multi-stage Docker build for production
 
 # Stage 1: Build frontend
-FROM node:18-alpine AS frontend-builder
+FROM node:18-bullseye-slim AS frontend-builder
 
 WORKDIR /app/frontend
 
@@ -14,7 +14,7 @@ COPY frontend/ ./
 RUN npm run build
 
 # Stage 2: Build backend
-FROM node:18-alpine AS backend-builder
+FROM node:18-bullseye-slim AS backend-builder
 
 WORKDIR /app/backend
 
@@ -29,21 +29,22 @@ COPY backend/src ./src
 RUN npm run build
 
 # Stage 3: Production image
-FROM node:18-alpine AS production
+FROM node:18-bullseye-slim AS production
 
 # Install system dependencies for wkhtmltopdf and curl for healthchecks
-RUN apk add --no-cache \
-    wkhtmltopdf \
-    ttf-freefont \
-    curl \
-    && rm -rf /var/cache/apk/*
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        wkhtmltopdf \
+        fonts-freefont-ttf \
+        curl \
+    && rm -rf /var/lib/apt/lists/*
 
 # Create app directory
 WORKDIR /app
 
 # Create non-root user
-RUN addgroup -g 1001 -S nodejs
-RUN adduser -S nextjs -u 1001
+RUN groupadd -g 1001 nodejs \
+    && useradd -u 1001 -g nodejs -m nextjs
 
 # Copy backend production files
 COPY --from=backend-builder /app/backend/dist ./backend/dist
