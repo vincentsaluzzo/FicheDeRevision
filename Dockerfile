@@ -18,9 +18,10 @@ FROM node:18-alpine AS backend-builder
 
 WORKDIR /app/backend
 
-# Copy backend package files
+# Copy backend package files and local vendor dependencies required for installation
 COPY backend/package*.json ./
 COPY backend/tsconfig.json ./
+COPY vendor/wkhtmltopdf-installer /app/vendor/wkhtmltopdf-installer
 RUN npm ci
 
 # Copy backend source and build
