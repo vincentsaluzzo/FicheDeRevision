@@ -30,6 +30,7 @@ Thumbs.db
 # Uploads and generated assets
 backend/uploads/
 !backend/uploads/.gitkeep
+backend/uploads-e2e/
 
 # Database
 backend/database.sqlite
