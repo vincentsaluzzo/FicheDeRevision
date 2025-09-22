@@ -30,21 +30,12 @@ RUN npm run build
 # Stage 3: Production image
 FROM node:18-alpine AS production
 
-# Install system dependencies for Puppeteer and curl for healthchecks
+# Install system dependencies for wkhtmltopdf and curl for healthchecks
 RUN apk add --no-cache \
-    chromium \
-    nss \
-    freetype \
-    freetype-dev \
-    harfbuzz \
-    ca-certificates \
+    wkhtmltopdf \
     ttf-freefont \
     curl \
     && rm -rf /var/cache/apk/*
-
-# Tell Puppeteer to skip installing Chromium. We'll be using the installed package.
-ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
-    PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
 
 # Create app directory
 WORKDIR /app

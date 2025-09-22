@@ -1,6 +1,7 @@
-import puppeteer from 'puppeteer';
 import path from 'path';
 import fs from 'fs';
+import { spawn } from 'child_process';
+import wkhtmltopdfInstaller from 'wkhtmltopdf-installer';
 import { AIResponse, Exercise } from '../types';
 import { getEducationLevel } from '../config/education';
 
@@ -27,68 +28,82 @@ export const generateAllPDFs = async (
   }
 };
 
+const wkhtmltopdfBinary =
+  process.env.WKHTMLTOPDF_PATH ||
+  (wkhtmltopdfInstaller as { path?: string }).path ||
+  'wkhtmltopdf';
+
+const createPdfFromHtml = async (html: string, pdfPath: string): Promise<void> => {
+  await fs.promises.mkdir(path.dirname(pdfPath), { recursive: true });
+
+  await new Promise<void>((resolve, reject) => {
+    const wkhtmltopdf = spawn(
+      wkhtmltopdfBinary,
+      [
+        '-',
+        pdfPath,
+        '--quiet',
+        '--enable-local-file-access',
+        '--print-media-type',
+        '--page-size',
+        'A4',
+        '--margin-top',
+        '20mm',
+        '--margin-right',
+        '15mm',
+        '--margin-bottom',
+        '20mm',
+        '--margin-left',
+        '15mm'
+      ],
+      { stdio: ['pipe', 'ignore', 'pipe'] }
+    );
+
+    let stderr = '';
+
+    wkhtmltopdf.stderr.on('data', (data) => {
+      stderr += data.toString();
+    });
+
+    wkhtmltopdf.on('error', (error) => {
+      reject(error);
+    });
+
+    wkhtmltopdf.on('close', (code) => {
+      if (code === 0) {
+        resolve();
+      } else {
+        reject(new Error(`wkhtmltopdf exited with code ${code}: ${stderr}`));
+      }
+    });
+
+    wkhtmltopdf.stdin.write(html);
+    wkhtmltopdf.stdin.end();
+  });
+};
+
 export const generatePDF = async (
   aiResponse: AIResponse,
   educationLevel: string,
   imagePath?: string,
   includeAnswers: boolean = true
 ): Promise<string> => {
-  let browser;
-
   try {
     const level = getEducationLevel(educationLevel);
     if (!level) {
       throw new Error(`Invalid education level: ${educationLevel}`);
     }
 
-    browser = await puppeteer.launch({
-      headless: true,
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-gpu',
-        '--disable-web-security',
-        '--disable-background-timer-throttling',
-        '--disable-backgrounding-occluded-windows',
-        '--disable-renderer-backgrounding',
-        '--disable-features=TranslateUI',
-        '--disable-ipc-flooding-protection'
-      ],
-      protocolTimeout: 60000,
-      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined
-    });
-
-    const page = await browser.newPage();
-
     const html = generateHTML(aiResponse, level, imagePath, includeAnswers);
-
-    await page.setContent(html, { waitUntil: 'networkidle0' });
-
     const uploadsDir = process.env.UPLOADS_DIR || './uploads';
     const suffix = includeAnswers ? 'avec_corrections' : 'exercices';
     const pdfPath = path.join(uploadsDir, `revision_${suffix}_${Date.now()}.pdf`);
-
-    await page.pdf({
-      path: pdfPath,
-      format: 'A4',
-      margin: {
-        top: '20mm',
-        right: '15mm',
-        bottom: '20mm',
-        left: '15mm'
-      },
-      printBackground: true
-    });
+    await createPdfFromHtml(html, pdfPath);
 
     return pdfPath;
   } catch (error) {
     console.error('PDF generation error:', error);
     throw new Error(`Failed to generate PDF: ${error instanceof Error ? error.message : 'Unknown error'}`);
-  } finally {
-    if (browser) {
-      await browser.close();
-    }
   }
 };
 
@@ -98,60 +113,21 @@ export const generateLessonPDF = async (
   educationLevel: string,
   imagePath?: string
 ): Promise<string> => {
-  let browser;
-
   try {
     const level = getEducationLevel(educationLevel);
     if (!level) {
       throw new Error(`Invalid education level: ${educationLevel}`);
     }
 
-    browser = await puppeteer.launch({
-      headless: true,
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-gpu',
-        '--disable-web-security',
-        '--disable-background-timer-throttling',
-        '--disable-backgrounding-occluded-windows',
-        '--disable-renderer-backgrounding',
-        '--disable-features=TranslateUI',
-        '--disable-ipc-flooding-protection'
-      ],
-      protocolTimeout: 60000,
-      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined
-    });
-
-    const page = await browser.newPage();
     const html = generateLessonsHTML(aiResponse, level, imagePath);
-
-    await page.setContent(html, { waitUntil: 'networkidle0' });
-
     const uploadsDir = process.env.UPLOADS_DIR || './uploads';
     const pdfPath = path.join(uploadsDir, `revision_lessons_${Date.now()}.pdf`);
-
-    await page.pdf({
-      path: pdfPath,
-      format: 'A4',
-      margin: {
-        top: '20mm',
-        right: '15mm',
-        bottom: '20mm',
-        left: '15mm'
-      },
-      printBackground: true
-    });
+    await createPdfFromHtml(html, pdfPath);
 
     return pdfPath;
   } catch (error) {
     console.error('Lessons PDF generation error:', error);
     throw new Error(`Failed to generate lessons PDF: ${error instanceof Error ? error.message : 'Unknown error'}`);
-  } finally {
-    if (browser) {
-      await browser.close();
-    }
   }
 };
 
@@ -160,60 +136,21 @@ export const generateExercisesPDF = async (
   aiResponse: AIResponse,
   educationLevel: string
 ): Promise<string> => {
-  let browser;
-
   try {
     const level = getEducationLevel(educationLevel);
     if (!level) {
       throw new Error(`Invalid education level: ${educationLevel}`);
     }
 
-    browser = await puppeteer.launch({
-      headless: true,
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-gpu',
-        '--disable-web-security',
-        '--disable-background-timer-throttling',
-        '--disable-backgrounding-occluded-windows',
-        '--disable-renderer-backgrounding',
-        '--disable-features=TranslateUI',
-        '--disable-ipc-flooding-protection'
-      ],
-      protocolTimeout: 60000,
-      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined
-    });
-
-    const page = await browser.newPage();
     const html = generateExercisesHTML(aiResponse, level);
-
-    await page.setContent(html, { waitUntil: 'networkidle0' });
-
     const uploadsDir = process.env.UPLOADS_DIR || './uploads';
     const pdfPath = path.join(uploadsDir, `revision_exercises_${Date.now()}.pdf`);
-
-    await page.pdf({
-      path: pdfPath,
-      format: 'A4',
-      margin: {
-        top: '20mm',
-        right: '15mm',
-        bottom: '20mm',
-        left: '15mm'
-      },
-      printBackground: true
-    });
+    await createPdfFromHtml(html, pdfPath);
 
     return pdfPath;
   } catch (error) {
     console.error('Exercises PDF generation error:', error);
     throw new Error(`Failed to generate exercises PDF: ${error instanceof Error ? error.message : 'Unknown error'}`);
-  } finally {
-    if (browser) {
-      await browser.close();
-    }
   }
 };
 
@@ -222,60 +159,21 @@ export const generateCorrectionsPDF = async (
   aiResponse: AIResponse,
   educationLevel: string
 ): Promise<string> => {
-  let browser;
-
   try {
     const level = getEducationLevel(educationLevel);
     if (!level) {
       throw new Error(`Invalid education level: ${educationLevel}`);
     }
 
-    browser = await puppeteer.launch({
-      headless: true,
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-gpu',
-        '--disable-web-security',
-        '--disable-background-timer-throttling',
-        '--disable-backgrounding-occluded-windows',
-        '--disable-renderer-backgrounding',
-        '--disable-features=TranslateUI',
-        '--disable-ipc-flooding-protection'
-      ],
-      protocolTimeout: 60000,
-      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined
-    });
-
-    const page = await browser.newPage();
     const html = generateCorrectionsHTML(aiResponse, level);
-
-    await page.setContent(html, { waitUntil: 'networkidle0' });
-
     const uploadsDir = process.env.UPLOADS_DIR || './uploads';
     const pdfPath = path.join(uploadsDir, `revision_corrections_${Date.now()}.pdf`);
-
-    await page.pdf({
-      path: pdfPath,
-      format: 'A4',
-      margin: {
-        top: '20mm',
-        right: '15mm',
-        bottom: '20mm',
-        left: '15mm'
-      },
-      printBackground: true
-    });
+    await createPdfFromHtml(html, pdfPath);
 
     return pdfPath;
   } catch (error) {
     console.error('Corrections PDF generation error:', error);
     throw new Error(`Failed to generate corrections PDF: ${error instanceof Error ? error.message : 'Unknown error'}`);
-  } finally {
-    if (browser) {
-      await browser.close();
-    }
   }
 };
 
