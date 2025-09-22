@@ -274,7 +274,12 @@ export const generateRevisionWithOpenAI = async (
       preview: imageBase64.substring(0, 100) + "...",
     });
 
-    const prompt = createRevisionPrompt(level.code, level.name, level.ageRange, questionCount);
+    const prompt = createRevisionPrompt(
+      level.code,
+      level.name,
+      level.ageRange,
+      questionCount
+    );
     debugLog("Generated prompt:", prompt);
 
     const model = process.env.OPENAI_MODEL || "gpt-4o-mini";
@@ -330,7 +335,12 @@ export const generateRevisionWithMistral = async (
       preview: imageBase64.substring(0, 100) + "...",
     });
 
-    const prompt = createRevisionPrompt(level.code, level.name, level.ageRange, questionCount);
+    const prompt = createRevisionPrompt(
+      level.code,
+      level.name,
+      level.ageRange,
+      questionCount
+    );
     debugLog("Generated prompt:", prompt);
 
     const requestPayload = {
